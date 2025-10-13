@@ -159,6 +159,13 @@ impl StandardCodingAgentExecutor for ClaudeCode {
         let base_command = command_builder.build_initial();
         self.spawn_internal(current_dir, prompt, base_command).await
     }
+}
+
+#[async_trait]
+impl StandardCodingAgentExecutor for ClaudeCode {
+    async fn spawn(&self, current_dir: &Path, prompt: &str) -> Result<SpawnedChild, ExecutorError> {
+        self.spawn(current_dir, prompt, None).await
+    }
 
     async fn spawn_follow_up(
         &self,
