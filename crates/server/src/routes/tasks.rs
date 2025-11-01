@@ -98,6 +98,7 @@ async fn handle_tasks_ws(
 pub async fn get_task(
     Extension(task): Extension<Task>,
     State(_deployment): State<DeploymentImpl>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, ApiError> {
     Ok(ResponseJson(ApiResponse::success(task)))
 }
@@ -111,7 +112,7 @@ pub struct TaskAttemptWithNotes {
 pub async fn get_task_attempts_with_notes(
     Extension(task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
-) -> Result<ResponseJson<ApiResponse<Vec<TaskAttemptWithNotes>>>>, ApiError> {
+) -> Result<ResponseJson<ApiResponse<Vec<TaskAttemptWithNotes>>>, ApiError> {
     let pool = &deployment.db().pool;
     let attempts = TaskAttempt::fetch_all(pool, Some(task.id)).await?;
     // For each attempt, load the latest executor_session summary if present
@@ -254,6 +255,13 @@ pub async fn update_task(
         .parent_task_attempt
         .or(existing_task.parent_task_attempt);
 
+    // Check blocking relationships if status is being changed
+    if status != existing_task.status {
+        Task::check_blocking_status(&deployment.db().pool, existing_task.id, status.clone())
+            .await
+            .map_err(|e| ApiError::BadRequest(e))?;
+    }
+
     let task = Task::update(
         &deployment.db().pool,
         existing_task.id,
@@ -324,6 +332,9 @@ pub async fn delete_task(
         let children_affected = Task::nullify_children_by_attempt_id(&mut *tx, attempt.id).await?;
         total_children_affected += children_affected;
     }
+
+    // Cascade delete relationships (foreign key will handle this, but we can also do it explicitly)
+    db::models::task_relationship::TaskRelationship::delete_by_task(&mut *tx, task.id).await?;
 
     // Delete task from database (FK CASCADE will handle task_attempts)
     let rows_affected = Task::delete(&mut *tx, task.id).await?;

@@ -21,6 +21,8 @@ pub mod images;
 pub mod projects;
 pub mod tags;
 pub mod task_attempts;
+pub mod task_relationship_types;
+pub mod task_relationships;
 pub mod tasks;
 
 pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
@@ -35,6 +37,8 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .merge(task_attempts::router(&deployment))
         .merge(execution_processes::router(&deployment))
         .merge(tags::router(&deployment))
+        .merge(task_relationship_types::router(&deployment))
+        .merge(task_relationships::router(&deployment))
         .merge(auth::router(&deployment))
         .merge(filesystem::router())
         .merge(events::router(&deployment))

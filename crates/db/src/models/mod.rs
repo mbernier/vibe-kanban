@@ -8,3 +8,5 @@ pub mod project;
 pub mod tag;
 pub mod task;
 pub mod task_attempt;
+pub mod task_relationship;
+pub mod task_relationship_type;

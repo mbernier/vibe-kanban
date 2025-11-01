@@ -242,6 +242,46 @@ pub struct AttemptNotesSummary {
     pub latest_summary: Option<String>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ManageTaskRelationshipsRequest {
+    #[schemars(description = "The ID of the task to manage relationships for")]
+    pub task_id: Uuid,
+    #[schemars(description = "Action to perform: 'add', 'update', 'delete', or 'list'")]
+    pub action: String,
+    #[schemars(description = "Relationship ID (required for 'update' and 'delete' actions)")]
+    pub relationship_id: Option<Uuid>,
+    #[schemars(description = "Target task ID (required for 'add' action, optional for 'update')")]
+    pub target_task_id: Option<Uuid>,
+    #[schemars(description = "Relationship type name (required for 'add' action, optional for 'update')")]
+    pub relationship_type: Option<String>,
+    #[schemars(description = "Optional note about the relationship")]
+    pub note: Option<String>,
+    #[schemars(description = "Optional JSON data for the relationship")]
+    pub data: Option<serde_json::Value>,
+    #[schemars(description = "Whether to include notes in the response (default: true)")]
+    pub include_notes: Option<bool>,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct TaskRelationshipSummary {
+    pub relationship_id: String,
+    pub relationship_type: String,
+    pub relationship_type_display: String,
+    pub source_task_id: String,
+    pub source_task_title: String,
+    pub target_task_id: String,
+    pub target_task_title: String,
+    #[schemars(description = "Direction ('forward' or 'reverse') for directional relationships")]
+    pub direction: Option<String>,
+    #[schemars(description = "Optional note about the relationship")]
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Serialize, schemars::JsonSchema)]
+pub struct ManageTaskRelationshipsResponse {
+    pub relationships: Vec<TaskRelationshipSummary>,
+}
+
 #[derive(Debug, Serialize, schemars::JsonSchema)]
 pub struct GetTaskResponse {
     pub task: TaskDetails,
@@ -631,6 +671,273 @@ impl TaskServer {
 
         TaskServer::success(&response)
     }
+
+    #[tool(description = "Manage task relationships (add, update, delete, or list relationships between tasks).")]
+    async fn manage_task_relationships(
+        &self,
+        Parameters(ManageTaskRelationshipsRequest {
+            task_id,
+            action,
+            relationship_id,
+            target_task_id,
+            relationship_type,
+            note,
+            data,
+            include_notes,
+        }): Parameters<ManageTaskRelationshipsRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let include_notes = include_notes.unwrap_or(true);
+
+        match action.as_str() {
+            "list" => {
+                let url = self.url(&format!("/api/tasks/{}/relationships", task_id));
+                let relationships: Vec<serde_json::Value> = match self.send_json(self.client.get(&url)).await {
+                    Ok(v) => v,
+                    Err(e) => return Ok(e),
+                };
+
+                let mut summaries = Vec::new();
+                for rel_group in relationships {
+                    let rel_type = match rel_group.get("relationship_type") {
+                        Some(t) => t,
+                        None => continue,
+                    };
+                    let type_name = match rel_type.get("type_name")?.as_str() {
+                        Some(n) => n.to_string(),
+                        None => continue,
+                    };
+                    let display_name = match rel_type.get("display_name")?.as_str() {
+                        Some(n) => n.to_string(),
+                        None => continue,
+                    };
+                    let is_directional = rel_type.get("is_directional")?.as_bool().unwrap_or(false);
+
+                    let forward = rel_group.get("forward").and_then(|v| v.as_array()).unwrap_or(&[]);
+                    let reverse = rel_group.get("reverse").and_then(|v| v.as_array()).unwrap_or(&[]);
+
+                    for rel in forward.iter().chain(reverse.iter()) {
+                        let rel_obj = match rel.get("relationship") {
+                            Some(o) => o,
+                            None => continue,
+                        };
+                        let source_task = match rel.get("source_task") {
+                            Some(t) => t,
+                            None => continue,
+                        };
+                        let target_task = match rel.get("target_task") {
+                            Some(t) => t,
+                            None => continue,
+                        };
+                        let direction = if forward.contains(rel) { "forward" } else { "reverse" };
+
+                        summaries.push(TaskRelationshipSummary {
+                            relationship_id: match rel_obj.get("id")?.as_str() {
+                                Some(id) => id.to_string(),
+                                None => continue,
+                            },
+                            relationship_type: type_name.clone(),
+                            relationship_type_display: display_name.clone(),
+                            source_task_id: match source_task.get("id")?.as_str() {
+                                Some(id) => id.to_string(),
+                                None => continue,
+                            },
+                            source_task_title: match source_task.get("title")?.as_str() {
+                                Some(title) => title.to_string(),
+                                None => continue,
+                            },
+                            target_task_id: match target_task.get("id")?.as_str() {
+                                Some(id) => id.to_string(),
+                                None => continue,
+                            },
+                            target_task_title: match target_task.get("title")?.as_str() {
+                                Some(title) => title.to_string(),
+                                None => continue,
+                            },
+                            direction: if is_directional {
+                                Some(direction.to_string())
+                            } else {
+                                None
+                            },
+                            note: if include_notes {
+                                rel_obj.get("note").and_then(|n| n.as_str()).map(|s| s.to_string())
+                            } else {
+                                None
+                            },
+                        });
+                    }
+                }
+
+                TaskServer::success(&ManageTaskRelationshipsResponse {
+                    relationships: summaries,
+                })
+            }
+            "add" => {
+                let relationship_type = relationship_type.ok_or_else(|| {
+                    Self::err("relationship_type is required for 'add' action", None::<String>).unwrap()
+                })?;
+
+                // First, get relationship type by name
+                let types_url = self.url("/api/task-relationship-types");
+                let types: Vec<serde_json::Value> = match self.send_json(self.client.get(&types_url)).await {
+                    Ok(v) => v,
+                    Err(e) => return Ok(e),
+                };
+
+                let rel_type_id = types
+                    .iter()
+                    .find_map(|t| {
+                        let type_name_str = t.get("type_name")?.as_str()?;
+                        if type_name_str == relationship_type {
+                            t.get("id")?.as_str().and_then(|id| Uuid::parse_str(id).ok())
+                        } else {
+                            None
+                        }
+                    })
+                    .ok_or_else(|| {
+                        Self::err(
+                            format!("Relationship type '{}' not found", relationship_type),
+                            None::<String>,
+                        )
+                        .unwrap()
+                    })?;
+
+                let target_task_id = target_task_id.ok_or_else(|| {
+                    Self::err("target_task_id is required for 'add' action", None::<String>).unwrap()
+                })?;
+
+                let payload = serde_json::json!({
+                    "target_task_id": target_task_id,
+                    "relationship_type_id": rel_type_id,
+                    "note": note,
+                    "data": data,
+                });
+
+                let url = self.url(&format!("/api/tasks/{}/relationships", task_id));
+                let relationship: serde_json::Value = match self
+                    .send_json(self.client.post(&url).json(&payload))
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(e) => return Ok(e),
+                };
+
+                let rel_obj = relationship.get("relationship")?;
+                TaskServer::success(&ManageTaskRelationshipsResponse {
+                    relationships: vec![TaskRelationshipSummary {
+                        relationship_id: match rel_obj.get("id")?.as_str() {
+                            Some(id) => id.to_string(),
+                            None => return Self::err("Invalid relationship response", None::<String>),
+                        },
+                        relationship_type: relationship_type.clone(),
+                        relationship_type_display: "".to_string(), // Will be populated by frontend
+                        source_task_id: task_id.to_string(),
+                        source_task_title: "".to_string(),
+                        target_task_id: target_task_id.to_string(),
+                        target_task_title: "".to_string(),
+                        direction: None,
+                        note: if include_notes {
+                            rel_obj.get("note").and_then(|n| n.as_str()).map(|s| s.to_string())
+                        } else {
+                            None
+                        },
+                    }],
+                })
+            }
+            "update" => {
+                let relationship_id = relationship_id.ok_or_else(|| {
+                    Self::err("relationship_id is required for 'update' action", None::<String>).unwrap()
+                })?;
+
+                let mut payload = serde_json::json!({});
+                if let Some(target_id) = target_task_id {
+                    payload["target_task_id"] = serde_json::Value::String(target_id.to_string());
+                }
+                if let Some(type_name) = relationship_type {
+                    // Get relationship type by name
+                    let types_url = self.url("/api/task-relationship-types");
+                    let types: Vec<serde_json::Value> = match self.send_json(self.client.get(&types_url)).await {
+                        Ok(v) => v,
+                        Err(e) => return Ok(e),
+                    };
+
+                    let rel_type_id = types
+                        .iter()
+                        .find_map(|t| {
+                            if t.get("type_name")?.as_str()? == type_name {
+                                t.get("id")?.as_str().and_then(|id| Uuid::parse_str(id).ok())
+                            } else {
+                                None
+                            }
+                        })
+                        .ok_or_else(|| {
+                            Self::err(
+                                format!("Relationship type '{}' not found", type_name),
+                                None::<String>,
+                            )
+                            .unwrap()
+                        })?;
+                    payload["relationship_type_id"] = serde_json::Value::String(rel_type_id.to_string());
+                }
+                if let Some(note_val) = note {
+                    payload["note"] = serde_json::Value::String(note_val);
+                }
+                if let Some(data_val) = data {
+                    payload["data"] = data_val;
+                }
+
+                let url = self.url(&format!(
+                    "/api/tasks/{}/relationships/{}",
+                    task_id, relationship_id
+                ));
+                let relationship: serde_json::Value = match self
+                    .send_json(self.client.put(&url).json(&payload))
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(e) => return Ok(e),
+                };
+
+                let rel_obj = relationship.get("relationship")?;
+                TaskServer::success(&ManageTaskRelationshipsResponse {
+                    relationships: vec![TaskRelationshipSummary {
+                        relationship_id: relationship_id.to_string(),
+                        relationship_type: relationship_type.unwrap_or_default(),
+                        relationship_type_display: "".to_string(),
+                        source_task_id: task_id.to_string(),
+                        source_task_title: "".to_string(),
+                        target_task_id: target_task_id.map(|id| id.to_string()).unwrap_or_default(),
+                        target_task_title: "".to_string(),
+                        direction: None,
+                        note: if include_notes {
+                            rel_obj.get("note").and_then(|n| n.as_str()).map(|s| s.to_string())
+                        } else {
+                            None
+                        },
+                    }],
+                })
+            }
+            "delete" => {
+                let relationship_id = relationship_id.ok_or_else(|| {
+                    Self::err("relationship_id is required for 'delete' action", None::<String>).unwrap()
+                })?;
+
+                let url = self.url(&format!(
+                    "/api/tasks/{}/relationships/{}",
+                    task_id, relationship_id
+                ));
+                match self.send_json(self.client.delete(&url)).await {
+                    Ok(_) => TaskServer::success(&ManageTaskRelationshipsResponse {
+                        relationships: vec![],
+                    }),
+                    Err(e) => Ok(e),
+                }
+            }
+            _ => Self::err(
+                format!("Invalid action: {}. Must be one of: add, update, delete, list", action),
+                None::<String>,
+            ),
+        }
+    }
 }
 
 #[tool_handler]
@@ -645,7 +952,7 @@ impl ServerHandler for TaskServer {
                 name: "vibe-kanban".to_string(),
                 version: "1.0.0".to_string(),
             },
-            instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),
+            instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task', 'manage_task_relationships'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),
         }
     }
 }
