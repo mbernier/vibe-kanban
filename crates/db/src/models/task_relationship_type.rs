@@ -22,9 +22,11 @@ pub struct TaskRelationshipType {
     #[serde(default)]
     pub enforces_blocking: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blocking_disabled_statuses: Option<String>, // JSON array as string
+    #[ts(type = "string[] | null")]
+    pub blocking_disabled_statuses: Option<String>, // JSON array as string - frontend should parse
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blocking_source_statuses: Option<String>, // JSON array as string
+    #[ts(type = "string[] | null")]
+    pub blocking_source_statuses: Option<String>, // JSON array as string - frontend should parse
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -35,16 +35,43 @@ pub async fn create_task_relationship(
         .await?
         .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
 
-    // Verify relationship type exists and check blocking rules if needed
-    let rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_id(
+    // Resolve relationship_type_id from either relationship_type_id or relationship_type (type_name)
+    let relationship_type_id = if let Some(id) = payload.relationship_type_id {
+        id
+    } else if let Some(type_name) = payload.relationship_type {
+        let rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_type_name(
+            &deployment.db().pool,
+            &type_name,
+        )
+        .await?
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!("Relationship type '{}' not found", type_name))
+        })?;
+        rel_type.id
+    } else {
+        return Err(ApiError::BadRequest(
+            "Either relationship_type_id or relationship_type (type_name) is required".to_string(),
+        ));
+    };
+
+    // Verify relationship type exists
+    let _rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_id(
         &deployment.db().pool,
-        payload.relationship_type_id,
+        relationship_type_id,
     )
     .await?
     .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
 
-    // Create relationship
-    let relationship = TaskRelationship::create(&deployment.db().pool, task.id, &payload).await?;
+    // Create relationship with resolved ID
+    let create_payload = CreateTaskRelationship {
+        target_task_id: payload.target_task_id,
+        relationship_type_id: Some(relationship_type_id),
+        relationship_type: None,
+        data: payload.data,
+        note: payload.note,
+    };
+
+    let relationship = TaskRelationship::create(&deployment.db().pool, task.id, &create_payload).await?;
 
     deployment
         .track_if_analytics_allowed(
@@ -53,7 +80,7 @@ pub async fn create_task_relationship(
                 "relationship_id": relationship.id.to_string(),
                 "task_id": task.id.to_string(),
                 "target_task_id": payload.target_task_id.to_string(),
-                "relationship_type_id": payload.relationship_type_id.to_string(),
+                "relationship_type_id": relationship_type_id.to_string(),
             }),
         )
         .await;
@@ -74,17 +101,43 @@ pub async fn update_task_relationship(
             .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
     }
 
+    // Resolve relationship_type_id if relationship_type (type_name) is provided
+    let relationship_type_id = if let Some(id) = payload.relationship_type_id {
+        Some(id)
+    } else if let Some(type_name) = payload.relationship_type {
+        let rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_type_name(
+            &deployment.db().pool,
+            &type_name,
+        )
+        .await?
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!("Relationship type '{}' not found", type_name))
+        })?;
+        Some(rel_type.id)
+    } else {
+        None
+    };
+
     // Verify relationship type exists if being changed
-    if let Some(relationship_type_id) = payload.relationship_type_id {
+    if let Some(rel_type_id) = relationship_type_id {
         let _rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_id(
             &deployment.db().pool,
-            relationship_type_id,
+            rel_type_id,
         )
         .await?
         .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
     }
 
-    let updated_relationship = TaskRelationship::update(&deployment.db().pool, relationship.id, &payload).await?;
+    // Update with resolved ID
+    let update_payload = UpdateTaskRelationship {
+        target_task_id: payload.target_task_id,
+        relationship_type_id,
+        relationship_type: None,
+        data: payload.data,
+        note: payload.note,
+    };
+
+    let updated_relationship = TaskRelationship::update(&deployment.db().pool, relationship.id, &update_payload).await?;
 
     deployment
         .track_if_analytics_allowed(

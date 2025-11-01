@@ -1,0 +1,15 @@
+{
+  "executors": {
+    "CLAUDE_CODE": {
+      "DEFAULT": {
+        "CLAUDE_CODE": {
+          "append_prompt": "If you don't have a CLAUDE.md file, quit immediately and report that CLAUDE.md is missing as the reason why you quit.",
+          "claude_code_router": false,
+          "plan": true,
+          "dangerously_skip_permissions": true,
+          "additional_params": []
+        }
+      }
+    }
+  }
+}

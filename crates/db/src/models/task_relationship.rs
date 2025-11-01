@@ -34,7 +34,10 @@ pub struct TaskRelationship {
 #[derive(Debug, Deserialize, TS)]
 pub struct CreateTaskRelationship {
     pub target_task_id: Uuid,
-    pub relationship_type_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relationship_type_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relationship_type: Option<String>, // type_name - alternative to relationship_type_id
     pub data: Option<serde_json::Value>,
     pub note: Option<String>,
 }
@@ -42,7 +45,10 @@ pub struct CreateTaskRelationship {
 #[derive(Debug, Deserialize, TS)]
 pub struct UpdateTaskRelationship {
     pub target_task_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub relationship_type_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relationship_type: Option<String>, // type_name - alternative to relationship_type_id
     pub data: Option<serde_json::Value>,
     pub note: Option<String>,
 }
@@ -329,13 +335,18 @@ impl TaskRelationship {
             ));
         }
 
+        // relationship_type_id should be set by the route handler
+        let relationship_type_id = data.relationship_type_id.ok_or_else(|| {
+            sqlx::Error::Protocol("relationship_type_id is required".into())
+        })?;
+
         // Verify target task exists
         let _target_task = Task::find_by_id(pool, data.target_task_id)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
         // Verify relationship type exists
-        let _rel_type = TaskRelationshipType::find_by_id(pool, data.relationship_type_id)
+        let _rel_type = TaskRelationshipType::find_by_id(pool, relationship_type_id)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
@@ -364,7 +375,7 @@ impl TaskRelationship {
             id,
             source_task_id,
             data.target_task_id,
-            data.relationship_type_id,
+            relationship_type_id,
             data_json,
             data.note
         )
