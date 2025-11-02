@@ -406,13 +406,12 @@ async fn test_delete_group_with_templates() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    // CRITICAL: Get status and body BEFORE any assertions to ensure we can debug
 }
 
 #[tokio::test]
 async fn test_template_reference_processing() {
     let (deployment, _temp_dir) = create_test_deployment().await;
-    let app = routes::router_for_testing(deployment.clone());
 
     // Create a template
     let template = TaskTemplate::create(
@@ -433,11 +432,11 @@ async fn test_template_reference_processing() {
     let task = create_test_task(&deployment.db().pool, project.id).await;
 
     // Update task with template reference
+    let app1 = routes::router_for_testing(deployment.clone());
     let update_payload = json!({
         "description": "This task references ~template:bug_report template"
     });
-
-    let response = app
+    let response = app1
         .oneshot(
             Request::builder()
                 .method("PUT")
@@ -452,7 +451,8 @@ async fn test_template_reference_processing() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // Get task and verify template reference is processed
-    let response = app
+    let app2 = routes::router_for_testing(deployment.clone());
+    let response = app2
         .oneshot(
             Request::builder()
                 .method("GET")

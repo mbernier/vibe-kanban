@@ -1,0 +1,92 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                id as \"id!: Uuid\", \n                type_name, \n                display_name, \n                description,\n                is_system as \"is_system!: i64\",\n                is_directional as \"is_directional!: i64\",\n                forward_label,\n                reverse_label,\n                enforces_blocking as \"enforces_blocking!: i64\",\n                blocking_disabled_statuses,\n                blocking_source_statuses,\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM task_relationship_types\n               WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "type_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "display_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_system!: i64",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_directional!: i64",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "forward_label",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "reverse_label",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "enforces_blocking!: i64",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "blocking_disabled_statuses",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "blocking_source_statuses",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 12,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "6c2973fa0156c8ed4824dce8b61d5897c66ed217daa4999fd32cef78ac603403"
+}

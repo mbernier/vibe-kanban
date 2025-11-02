@@ -11,6 +11,15 @@ use uuid::Uuid;
 use crate::helpers::*;
 use server::{routes, mcp::task_server::TaskServer};
 
+// Helper function to extract text from Content enum
+fn extract_text_from_content(content: &rmcp::model::Content) -> String {
+    if let Some(text) = content.as_text() {
+        text.text.clone()
+    } else {
+        panic!("Expected text content but got: {:?}", content);
+    }
+}
+
 // Test Isolation: Each test creates its own isolated deployment with a fresh database
 // via `create_test_deployment()`. The TempDir is kept alive (via `_temp_dir`) to ensure
 // the database file persists during the test execution. Each test also spawns its own
@@ -113,10 +122,13 @@ async fn test_mcp_get_template() {
     }
     let content = call_result.content.unwrap();
     assert!(!content.is_empty());
-    let response_text = content[0].as_text().unwrap().text.as_str();
-    let response: serde_json::Value = serde_json::from_str(response_text).unwrap();
-    assert_eq!(response["template_name"].as_str().unwrap(), "bug_report");
-    assert_eq!(Uuid::parse_str(response["id"].as_str().unwrap()).unwrap(), template.id);
+    let response_text = extract_text_from_content(&content[0]);
+    let response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+    // GetTaskTemplateResponse wraps template in a "template" field
+    assert!(response.get("template").is_some(), "Response missing 'template' field");
+    let template_obj = &response["template"];
+    assert_eq!(template_obj["template_name"].as_str().unwrap(), "bug_report");
+    assert_eq!(Uuid::parse_str(template_obj["id"].as_str().unwrap()).unwrap(), template.id);
 }
 
 #[tokio::test]
@@ -165,9 +177,13 @@ async fn test_mcp_create_template() {
     }
     let content = call_result.content.unwrap();
     assert!(!content.is_empty());
-    let response_text = content[0].as_text().unwrap().text.as_str();
-    let response: serde_json::Value = serde_json::from_str(response_text).unwrap();
-    assert_eq!(response["template_name"].as_str().unwrap(), "new_template");
+    let response_text = extract_text_from_content(&content[0]);
+    let response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+    eprintln!("Parsed response: {}", serde_json::to_string_pretty(&response).unwrap());
+    // CreateTaskTemplateResponse returns template_id
+    assert!(response.get("template_id").is_some());
+    let template_id = response["template_id"].as_str().unwrap();
+    assert!(!template_id.is_empty());
 }
 
 #[tokio::test]

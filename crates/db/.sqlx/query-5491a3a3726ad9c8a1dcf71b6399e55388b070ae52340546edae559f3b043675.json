@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM task_relationships WHERE source_task_id = $1 OR target_task_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5491a3a3726ad9c8a1dcf71b6399e55388b070ae52340546edae559f3b043675"
+}
