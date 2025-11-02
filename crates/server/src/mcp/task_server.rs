@@ -1100,7 +1100,7 @@ impl TaskServer {
     }
 
     #[tool(description = "List all task templates. Optionally filter by group_id.")]
-    async fn list_task_templates(
+    pub async fn list_task_templates(
         &self,
         Parameters(ListTaskTemplatesRequest {
             group_id,
@@ -1129,7 +1129,7 @@ impl TaskServer {
     }
 
     #[tool(description = "Get a specific task template by ID or template name.")]
-    async fn get_task_template(
+    pub async fn get_task_template(
         &self,
         Parameters(GetTaskTemplateRequest {
             template_id,
@@ -1168,7 +1168,7 @@ impl TaskServer {
     }
 
     #[tool(description = "Create a new task template.")]
-    async fn create_task_template(
+    pub async fn create_task_template(
         &self,
         Parameters(CreateTaskTemplateRequest {
             group_id,
@@ -1243,7 +1243,7 @@ impl TaskServer {
     }
 
     #[tool(description = "List all task template groups. Set hierarchical=true to get tree structure.")]
-    async fn list_task_template_groups(
+    pub async fn list_task_template_groups(
         &self,
         Parameters(ListTaskTemplateGroupsRequest {
             hierarchical,

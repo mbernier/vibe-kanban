@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                tr.id as \"id!: Uuid\",\n                tr.source_task_id as \"source_task_id!: Uuid\",\n                tr.target_task_id as \"target_task_id!: Uuid\",\n                tr.relationship_type_id as \"relationship_type_id!: Uuid\",\n                tr.data,\n                tr.note,\n                tr.created_at as \"created_at!: DateTime<Utc>\",\n                tr.updated_at as \"updated_at!: DateTime<Utc>\",\n                trt.type_name as \"relationship_type_name: String\",\n                trt.is_directional as \"is_directional: i64\",\n                trt.forward_label as \"forward_label: String\",\n                trt.reverse_label as \"reverse_label: String\"\n               FROM task_relationships tr\n               JOIN task_relationship_types trt ON tr.relationship_type_id = trt.id\n               WHERE tr.source_task_id = $1\n               ORDER BY tr.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "source_task_id!: Uuid",
+        "ordinal": 1,
+        "type_info": "Blob"
+      },
+      {
+        "name": "target_task_id!: Uuid",
+        "ordinal": 2,
+        "type_info": "Blob"
+      },
+      {
+        "name": "relationship_type_id!: Uuid",
+        "ordinal": 3,
+        "type_info": "Blob"
+      },
+      {
+        "name": "data",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "note",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "relationship_type_name: String",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_directional: i64",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "forward_label: String",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "reverse_label: String",
+        "ordinal": 11,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "6163aafb6f820f2a96c46a0581df9d63f8fb14f61f504a1542c7e900aa33e614"
+}
