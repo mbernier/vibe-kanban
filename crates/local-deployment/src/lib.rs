@@ -203,3 +203,101 @@ impl Deployment for LocalDeployment {
         &self.drafts
     }
 }
+
+impl LocalDeployment {
+    /// Create a LocalDeployment for testing with an isolated database
+    /// This is a test-only method that creates a deployment with a custom database path
+    pub async fn new_for_testing(db_path: &std::path::Path) -> Result<Self, DeploymentError> {
+        use std::sync::Arc;
+        use std::str::FromStr;
+        use tokio::sync::RwLock;
+        use sqlx::sqlite::SqliteConnectOptions;
+        use sqlx::sqlite::SqlitePoolOptions;
+        
+        // Create a minimal config for testing
+        let config = Arc::new(RwLock::new(Config::default()));
+        let user_id = generate_user_id();
+        let analytics = None; // Disable analytics for tests
+        let git = GitService::new();
+        let msg_stores = Arc::new(RwLock::new(HashMap::new()));
+        let auth = AuthService::new();
+        let filesystem = FilesystemService::new();
+        
+        // Create shared components for EventService
+        let events_msg_store = Arc::new(MsgStore::new());
+        let events_entry_count = Arc::new(RwLock::new(0));
+        
+        // Create DB with custom path
+        let db = {
+            let temp_db = DBService::new_with_path(db_path).await?;
+            let hook = EventService::create_hook(
+                events_msg_store.clone(),
+                events_entry_count.clone(),
+                temp_db.clone(),
+            );
+            // Create a new DB service with the hook
+            let database_url = format!("sqlite://{}", db_path.to_string_lossy());
+            let options = SqliteConnectOptions::from_str(&database_url)
+                .map_err(|e| DeploymentError::Other(anyhow::anyhow!("Failed to parse database URL: {}", e)))?
+                .create_if_missing(true);
+            
+            let hook_arc = Arc::new(hook);
+            let pool = SqlitePoolOptions::new()
+                .after_connect({
+                    let hook_arc = hook_arc.clone();
+                    move |conn, _meta| {
+                        let hook_arc = hook_arc.clone();
+                        Box::pin(async move {
+                            hook_arc(conn).await?;
+                            Ok(())
+                        })
+                    }
+                })
+                .connect_with(options)
+                .await
+                .map_err(|e| DeploymentError::Other(anyhow::anyhow!("Failed to connect to database: {}", e)))?;
+            
+            sqlx::migrate!("../db/migrations").run(&pool).await
+                .map_err(|e| DeploymentError::Other(anyhow::anyhow!("Failed to run migrations: {}", e)))?;
+            
+            DBService { pool }
+        };
+        
+        let image = ImageService::new(db.clone().pool)
+            .map_err(|e| DeploymentError::Other(anyhow::anyhow!("Failed to create ImageService: {}", e)))?;
+        
+        let approvals = Approvals::new(msg_stores.clone());
+        
+        let container = LocalContainerService::new(
+            db.clone(),
+            msg_stores.clone(),
+            config.clone(),
+            git.clone(),
+            image.clone(),
+            None, // analytics_ctx
+            approvals.clone(),
+        );
+        // Don't spawn worktree cleanup in tests
+        
+        let events = EventService::new(db.clone(), events_msg_store, events_entry_count);
+        let drafts = DraftsService::new(db.clone(), image.clone());
+        let file_search_cache = Arc::new(FileSearchCache::new());
+        
+        Ok(Self {
+            config,
+            user_id,
+            db,
+            analytics,
+            msg_stores,
+            container,
+            git,
+            auth,
+            image,
+            filesystem,
+            events,
+            file_search_cache,
+            approvals,
+            drafts,
+        })
+    }
+}

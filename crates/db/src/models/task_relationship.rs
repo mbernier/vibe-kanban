@@ -94,7 +94,7 @@ impl TaskRelationship {
                 tr.created_at as "created_at!: DateTime<Utc>",
                 tr.updated_at as "updated_at!: DateTime<Utc>",
                 trt.type_name as "relationship_type_name: String",
-                trt.is_directional as "is_directional: i64",
+                trt.is_directional as "is_directional: bool",
                 trt.forward_label as "forward_label: String",
                 trt.reverse_label as "reverse_label: String"
                FROM task_relationships tr
@@ -123,7 +123,7 @@ impl TaskRelationship {
                 tr.created_at as "created_at!: DateTime<Utc>",
                 tr.updated_at as "updated_at!: DateTime<Utc>",
                 trt.type_name as "relationship_type_name: String",
-                trt.is_directional as "is_directional: i64",
+                trt.is_directional as "is_directional: bool",
                 trt.forward_label as "forward_label: String",
                 trt.reverse_label as "reverse_label: String"
                FROM task_relationships tr
@@ -209,7 +209,7 @@ impl TaskRelationship {
                 tr.created_at as "created_at!: DateTime<Utc>",
                 tr.updated_at as "updated_at!: DateTime<Utc>",
                 trt.type_name as "relationship_type_name: String",
-                trt.is_directional as "is_directional: i64",
+                trt.is_directional as "is_directional: bool",
                 trt.forward_label as "forward_label: String",
                 trt.reverse_label as "reverse_label: String"
                FROM task_relationships tr
@@ -240,7 +240,7 @@ impl TaskRelationship {
                 tr.created_at as "created_at!: DateTime<Utc>",
                 tr.updated_at as "updated_at!: DateTime<Utc>",
                 trt.type_name as "relationship_type_name: String",
-                trt.is_directional as "is_directional: i64",
+                trt.is_directional as "is_directional: bool",
                 trt.forward_label as "forward_label: String",
                 trt.reverse_label as "reverse_label: String"
                FROM task_relationships tr
@@ -283,7 +283,7 @@ impl TaskRelationship {
                 tr.created_at as "created_at!: DateTime<Utc>",
                 tr.updated_at as "updated_at!: DateTime<Utc>",
                 trt.type_name as "relationship_type_name: String",
-                trt.is_directional as "is_directional: i64",
+                trt.is_directional as "is_directional: bool",
                 trt.forward_label as "forward_label: String",
                 trt.reverse_label as "reverse_label: String"
                FROM task_relationships tr
@@ -369,7 +369,7 @@ impl TaskRelationship {
                 created_at as "created_at!: DateTime<Utc>",
                 updated_at as "updated_at!: DateTime<Utc>",
                 NULL as "relationship_type_name: String",
-                NULL as "is_directional: i64",
+                NULL as "is_directional: bool",
                 NULL as "forward_label: String",
                 NULL as "reverse_label: String""#,
             id,
@@ -440,7 +440,7 @@ impl TaskRelationship {
                    created_at as "created_at!: DateTime<Utc>",
                    updated_at as "updated_at!: DateTime<Utc>",
                    NULL as "relationship_type_name: String",
-                   NULL as "is_directional: i64",
+                   NULL as "is_directional: bool",
                    NULL as "forward_label: String",
                    NULL as "reverse_label: String""#,
             id,

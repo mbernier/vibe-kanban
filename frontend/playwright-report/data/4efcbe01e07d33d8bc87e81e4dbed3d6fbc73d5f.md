@@ -1,0 +1,80 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - generic [ref=e8]: Development Mode - This is a development build
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - link [ref=e13] [cursor=pointer]:
+        - /url: /projects
+        - img [ref=e14]
+      - link "Join our Discord" [ref=e16] [cursor=pointer]:
+        - /url: https://discord.gg/AC4nwVtJM3
+        - img [ref=e18]
+        - generic [ref=e20]: 37 online
+    - generic [ref=e21]:
+      - link "Settings" [ref=e22] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e23]
+      - button "Main navigation" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+  - generic [ref=e30]:
+    - generic [ref=e31]:
+      - heading "Settings" [level=1] [ref=e32]
+      - button "ESC" [ref=e33] [cursor=pointer]:
+        - img [ref=e34]
+        - generic [ref=e37]: ESC
+    - generic [ref=e38]:
+      - complementary [ref=e39]:
+        - navigation [ref=e41]:
+          - link "General Theme, notifications, and preferences" [ref=e42] [cursor=pointer]:
+            - /url: /settings/general
+            - img [ref=e43]
+            - generic [ref=e46]:
+              - generic [ref=e47]: General
+              - generic [ref=e48]: Theme, notifications, and preferences
+          - link "Projects Project scripts and configuration" [ref=e49] [cursor=pointer]:
+            - /url: /settings/projects
+            - img [ref=e50]
+            - generic [ref=e52]:
+              - generic [ref=e53]: Projects
+              - generic [ref=e54]: Project scripts and configuration
+          - link "Agents Coding agent configurations" [ref=e55] [cursor=pointer]:
+            - /url: /settings/agents
+            - img [ref=e56]
+            - generic [ref=e59]:
+              - generic [ref=e60]: Agents
+              - generic [ref=e61]: Coding agent configurations
+          - link "MCP Servers Model Context Protocol servers" [ref=e62] [cursor=pointer]:
+            - /url: /settings/mcp
+            - img [ref=e63]
+            - generic [ref=e66]:
+              - generic [ref=e67]: MCP Servers
+              - generic [ref=e68]: Model Context Protocol servers
+          - link "Relationship Types Manage task relationship types" [ref=e69] [cursor=pointer]:
+            - /url: /settings/relationship-types
+            - img [ref=e70]
+            - generic [ref=e73]:
+              - generic [ref=e74]: Relationship Types
+              - generic [ref=e75]: Manage task relationship types
+          - link "Task Templates Create and manage ticket templates" [ref=e76] [cursor=pointer]:
+            - /url: /settings/task-templates
+            - img [ref=e77]
+            - generic [ref=e80]:
+              - generic [ref=e81]: Task Templates
+              - generic [ref=e82]: Create and manage ticket templates
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - heading "Relationship Types" [level=2] [ref=e86]
+            - paragraph [ref=e87]: Manage relationship types that define how tasks can be linked together.
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - heading "Relationship Types" [level=3] [ref=e90]
+              - button "Add Type" [ref=e91] [cursor=pointer]:
+                - img [ref=e92]
+                - text: Add Type
+            - generic [ref=e93]: No relationship types
+```

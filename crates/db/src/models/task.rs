@@ -398,7 +398,8 @@ ORDER BY t.created_at DESC"#,
         new_status: TaskStatus,
     ) -> Result<(), String> {
         // Find all blocking relationships
-        let blocking_rels = super::task_relationship::TaskRelationship::find_blocking_relationships(pool, id).await?;
+        let blocking_rels = super::task_relationship::TaskRelationship::find_blocking_relationships(pool, id).await
+            .map_err(|e| format!("Database error: {}", e))?;
 
         if blocking_rels.is_empty() {
             return Ok(());

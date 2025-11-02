@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                    id as \"id!: Uuid\", \n                    group_id as \"group_id: Uuid\",\n                    template_name,\n                    template_title,\n                    ticket_title,\n                    ticket_description,\n                    created_at as \"created_at!: DateTime<Utc>\", \n                    updated_at as \"updated_at!: DateTime<Utc>\"\n                   FROM task_templates\n                   WHERE group_id IS NULL\n                   ORDER BY template_title ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "group_id: Uuid",
+        "ordinal": 1,
+        "type_info": "Blob"
+      },
+      {
+        "name": "template_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "template_title",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "ticket_title",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "ticket_description",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7316775bccac92d1aefb63f3ab43e92fda91046247e596ced8ef14ea2dac9610"
+}

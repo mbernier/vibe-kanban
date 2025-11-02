@@ -112,11 +112,15 @@ pub async fn update_relationship_type(
 
     // Validate blocking requirements if being set
     if let Some(enforces_blocking) = payload.enforces_blocking {
-        let disabled_statuses = payload.blocking_disabled_statuses.as_ref()
-            .or_else(|| existing_type.blocking_disabled_statuses.as_ref().and_then(|s| serde_json::from_str::<Vec<String>>(s).ok()));
-        let source_statuses = payload.blocking_source_statuses.as_ref()
-            .or_else(|| existing_type.blocking_source_statuses.as_ref().and_then(|s| serde_json::from_str::<Vec<String>>(s).ok()));
-        if enforces_blocking && (disabled_statuses.is_none() || source_statuses.is_none()) {
+        let has_disabled_statuses = payload.blocking_disabled_statuses.is_some()
+            || existing_type.blocking_disabled_statuses.as_ref()
+                .and_then(|s| serde_json::from_str::<Vec<String>>(s).ok())
+                .is_some();
+        let has_source_statuses = payload.blocking_source_statuses.is_some()
+            || existing_type.blocking_source_statuses.as_ref()
+                .and_then(|s| serde_json::from_str::<Vec<String>>(s).ok())
+                .is_some();
+        if enforces_blocking && (!has_disabled_statuses || !has_source_statuses) {
             return Err(ApiError::BadRequest(
                 "Blocking relationship types must have both blocking_disabled_statuses and blocking_source_statuses".to_string(),
             ));

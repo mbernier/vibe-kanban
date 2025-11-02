@@ -6,7 +6,7 @@ use axum::{
 };
 use db::models::{
     execution_process::ExecutionProcess, project::Project, tag::Tag, task::Task,
-    task_attempt::TaskAttempt,
+    task_attempt::TaskAttempt, task_template::TaskTemplate, task_template_group::TaskTemplateGroup,
 };
 use deployment::Deployment;
 use uuid::Uuid;
@@ -201,5 +201,53 @@ pub async fn load_tag_middleware(
     request.extensions_mut().insert(tag);
 
     // Continue with the next middleware/handler
+    Ok(next.run(request).await)
+}
+
+pub async fn load_template_middleware(
+    State(deployment): State<DeploymentImpl>,
+    Path(template_id): Path<Uuid>,
+    request: axum::extract::Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let template = match TaskTemplate::find_by_id(&deployment.db().pool, template_id).await {
+        Ok(Some(template)) => template,
+        Ok(None) => {
+            tracing::warn!("TaskTemplate {} not found", template_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch template {}: {}", template_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let mut request = request;
+    request.extensions_mut().insert(template);
+
+    Ok(next.run(request).await)
+}
+
+pub async fn load_template_group_middleware(
+    State(deployment): State<DeploymentImpl>,
+    Path(group_id): Path<Uuid>,
+    request: axum::extract::Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let group = match TaskTemplateGroup::find_by_id(&deployment.db().pool, group_id).await {
+        Ok(Some(group)) => group,
+        Ok(None) => {
+            tracing::warn!("TaskTemplateGroup {} not found", group_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch template group {}: {}", group_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let mut request = request;
+    request.extensions_mut().insert(group);
+
     Ok(next.run(request).await)
 }

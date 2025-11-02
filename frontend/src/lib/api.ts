@@ -33,6 +33,13 @@ import {
   UpdateProject,
   UpdateTask,
   UpdateTag,
+  TaskTemplate,
+  CreateTaskTemplate,
+  UpdateTaskTemplate,
+  TaskTemplateGroup,
+  TaskTemplateGroupWithChildren,
+  CreateTaskTemplateGroup,
+  UpdateTaskTemplateGroup,
   UserSystemInfo,
   GitHubServiceError,
   UpdateRetryFollowUpDraftRequest,
@@ -707,6 +714,97 @@ export const tagsApi = {
 
   delete: async (tagId: string): Promise<void> => {
     const response = await makeRequest(`/api/tags/${tagId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
+// Task Template APIs (all templates are global)
+export const taskTemplatesApi = {
+  list: async (params?: { group_id?: string; search?: string }): Promise<TaskTemplate[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.group_id) {
+      queryParams.set('group_id', params.group_id);
+    }
+    if (params?.search) {
+      queryParams.set('search', params.search);
+    }
+    const queryString = queryParams.toString();
+    const response = await makeRequest(`/api/task-templates${queryString ? `?${queryString}` : ''}`);
+    return handleApiResponse<TaskTemplate[]>(response);
+  },
+
+  get: async (templateId: string): Promise<TaskTemplate> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`);
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  create: async (data: CreateTaskTemplate): Promise<TaskTemplate> => {
+    const response = await makeRequest('/api/task-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  update: async (templateId: string, data: UpdateTaskTemplate): Promise<TaskTemplate> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  delete: async (templateId: string): Promise<void> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
+// Task Template Group APIs
+export const taskTemplateGroupsApi = {
+  list: async (params?: { hierarchical?: boolean; parent_id?: string; search?: string }): Promise<TaskTemplateGroupWithChildren[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.hierarchical) {
+      queryParams.set('hierarchical', 'true');
+    }
+    if (params?.parent_id) {
+      queryParams.set('parent_id', params.parent_id);
+    }
+    if (params?.search) {
+      queryParams.set('search', params.search);
+    }
+    const queryString = queryParams.toString();
+    const response = await makeRequest(`/api/task-template-groups${queryString ? `?${queryString}` : ''}`);
+    return handleApiResponse<TaskTemplateGroupWithChildren[]>(response);
+  },
+
+  get: async (groupId: string): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`);
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  create: async (data: CreateTaskTemplateGroup): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest('/api/task-template-groups', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  update: async (groupId: string, data: UpdateTaskTemplateGroup): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  delete: async (groupId: string): Promise<void> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`, {
       method: 'DELETE',
     });
     return handleApiResponse<void>(response);

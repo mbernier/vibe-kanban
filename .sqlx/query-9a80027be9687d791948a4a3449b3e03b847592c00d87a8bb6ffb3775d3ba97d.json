@@ -1,0 +1,92 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO task_relationship_types (\n                id, type_name, display_name, description, is_directional, \n                forward_label, reverse_label, enforces_blocking, \n                blocking_disabled_statuses, blocking_source_statuses\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            RETURNING \n                id as \"id!: Uuid\", \n                type_name, \n                display_name, \n                description,\n                is_system as \"is_system!: bool\",\n                is_directional as \"is_directional!: bool\",\n                forward_label,\n                reverse_label,\n                enforces_blocking as \"enforces_blocking!: bool\",\n                blocking_disabled_statuses,\n                blocking_source_statuses,\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "type_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "display_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_system!: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_directional!: bool",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "forward_label",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "reverse_label",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "enforces_blocking!: bool",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "blocking_disabled_statuses",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "blocking_source_statuses",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 12,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "9a80027be9687d791948a4a3449b3e03b847592c00d87a8bb6ffb3775d3ba97d"
+}

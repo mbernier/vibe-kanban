@@ -1,0 +1,92 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE task_relationship_types\n               SET type_name = $2, \n                   display_name = $3, \n                   description = $4,\n                   is_directional = $5,\n                   forward_label = $6,\n                   reverse_label = $7,\n                   enforces_blocking = $8,\n                   blocking_disabled_statuses = $9,\n                   blocking_source_statuses = $10,\n                   updated_at = datetime('now', 'subsec')\n               WHERE id = $1\n               RETURNING \n                   id as \"id!: Uuid\", \n                   type_name, \n                   display_name, \n                   description,\n                   is_system as \"is_system!: bool\",\n                   is_directional as \"is_directional!: bool\",\n                   forward_label,\n                   reverse_label,\n                   enforces_blocking as \"enforces_blocking!: bool\",\n                   blocking_disabled_statuses,\n                   blocking_source_statuses,\n                   created_at as \"created_at!: DateTime<Utc>\", \n                   updated_at as \"updated_at!: DateTime<Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "type_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "display_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_system!: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_directional!: bool",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "forward_label",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "reverse_label",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "enforces_blocking!: bool",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "blocking_disabled_statuses",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "blocking_source_statuses",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 12,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "118665e8dfc894b8bece7d02de9473079a602e06ed74e62444219193c415c789"
+}

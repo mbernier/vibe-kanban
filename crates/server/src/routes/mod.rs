@@ -23,6 +23,8 @@ pub mod tags;
 pub mod task_attempts;
 pub mod task_relationship_types;
 pub mod task_relationships;
+pub mod task_template_groups;
+pub mod task_templates;
 pub mod tasks;
 
 pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
@@ -39,6 +41,8 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .merge(tags::router(&deployment))
         .merge(task_relationship_types::router(&deployment))
         .merge(task_relationships::router(&deployment))
+        .merge(task_templates::router(&deployment))
+        .merge(task_template_groups::router(&deployment))
         .merge(auth::router(&deployment))
         .merge(filesystem::router())
         .merge(events::router(&deployment))
@@ -48,11 +52,45 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
             deployment.clone(),
             auth::sentry_user_context_middleware,
         ))
-        .with_state(deployment);
+        .with_state(deployment.clone());
 
     Router::new()
         .route("/", get(frontend::serve_frontend_root))
         .route("/{*path}", get(frontend::serve_frontend))
         .nest("/api", base_routes)
         .into_make_service()
+}
+
+/// Create a router for testing (returns Router instead of IntoMakeService)
+pub fn router_for_testing(deployment: DeploymentImpl) -> Router {
+    // Create routers with different middleware layers
+    let base_routes = Router::new()
+        .route("/health", get(health::health_check))
+        .merge(config::router())
+        .merge(containers::router(&deployment))
+        .merge(projects::router(&deployment))
+        .merge(drafts::router(&deployment))
+        .merge(tasks::router(&deployment))
+        .merge(task_attempts::router(&deployment))
+        .merge(execution_processes::router(&deployment))
+        .merge(tags::router(&deployment))
+        .merge(task_relationship_types::router(&deployment))
+        .merge(task_relationships::router(&deployment))
+        .merge(task_templates::router(&deployment))
+        .merge(task_template_groups::router(&deployment))
+        .merge(auth::router(&deployment))
+        .merge(filesystem::router())
+        .merge(events::router(&deployment))
+        .merge(approvals::router())
+        .nest("/images", images::routes())
+        .layer(from_fn_with_state(
+            deployment.clone(),
+            auth::sentry_user_context_middleware,
+        ))
+        .with_state(deployment.clone());
+
+    Router::new()
+        .route("/", get(frontend::serve_frontend_root))
+        .route("/{*path}", get(frontend::serve_frontend))
+        .nest("/api", base_routes)
 }

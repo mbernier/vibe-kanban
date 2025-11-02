@@ -68,7 +68,8 @@ impl TaskRelationshipType {
                     .iter()
                     .map(|s| s.parse())
                     .collect();
-                Ok(Some(task_statuses?))
+                task_statuses.map_err(|e| serde_json::Error::io(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse task status: {}", e))))
+                    .map(Some)
             }
             None => Ok(None),
         }
@@ -82,7 +83,8 @@ impl TaskRelationshipType {
                     .iter()
                     .map(|s| s.parse())
                     .collect();
-                Ok(Some(task_statuses?))
+                task_statuses.map_err(|e| serde_json::Error::io(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse task status: {}", e))))
+                    .map(Some)
             }
             None => Ok(None),
         }
@@ -96,11 +98,11 @@ impl TaskRelationshipType {
                 type_name, 
                 display_name, 
                 description,
-                is_system as "is_system!: i64",
-                is_directional as "is_directional!: i64",
+                is_system as "is_system!: bool",
+                is_directional as "is_directional!: bool",
                 forward_label,
                 reverse_label,
-                enforces_blocking as "enforces_blocking!: i64",
+                enforces_blocking as "enforces_blocking!: bool",
                 blocking_disabled_statuses,
                 blocking_source_statuses,
                 created_at as "created_at!: DateTime<Utc>", 
@@ -120,11 +122,11 @@ impl TaskRelationshipType {
                 type_name, 
                 display_name, 
                 description,
-                is_system as "is_system!: i64",
-                is_directional as "is_directional!: i64",
+                is_system as "is_system!: bool",
+                is_directional as "is_directional!: bool",
                 forward_label,
                 reverse_label,
-                enforces_blocking as "enforces_blocking!: i64",
+                enforces_blocking as "enforces_blocking!: bool",
                 blocking_disabled_statuses,
                 blocking_source_statuses,
                 created_at as "created_at!: DateTime<Utc>", 
@@ -145,11 +147,11 @@ impl TaskRelationshipType {
                 type_name, 
                 display_name, 
                 description,
-                is_system as "is_system!: i64",
-                is_directional as "is_directional!: i64",
+                is_system as "is_system!: bool",
+                is_directional as "is_directional!: bool",
                 forward_label,
                 reverse_label,
-                enforces_blocking as "enforces_blocking!: i64",
+                enforces_blocking as "enforces_blocking!: bool",
                 blocking_disabled_statuses,
                 blocking_source_statuses,
                 created_at as "created_at!: DateTime<Utc>", 
@@ -170,11 +172,11 @@ impl TaskRelationshipType {
                 type_name, 
                 display_name, 
                 description,
-                is_system as "is_system!: i64",
-                is_directional as "is_directional!: i64",
+                is_system as "is_system!: bool",
+                is_directional as "is_directional!: bool",
                 forward_label,
                 reverse_label,
-                enforces_blocking as "enforces_blocking!: i64",
+                enforces_blocking as "enforces_blocking!: bool",
                 blocking_disabled_statuses,
                 blocking_source_statuses,
                 created_at as "created_at!: DateTime<Utc>", 
@@ -207,6 +209,9 @@ impl TaskRelationshipType {
             ));
         }
 
+        let is_directional_i64 = data.is_directional as i64;
+        let enforces_blocking_i64 = data.enforces_blocking as i64;
+
         sqlx::query_as!(
             TaskRelationshipType,
             r#"INSERT INTO task_relationship_types (
@@ -220,11 +225,11 @@ impl TaskRelationshipType {
                 type_name, 
                 display_name, 
                 description,
-                is_system as "is_system!: i64",
-                is_directional as "is_directional!: i64",
+                is_system as "is_system!: bool",
+                is_directional as "is_directional!: bool",
                 forward_label,
                 reverse_label,
-                enforces_blocking as "enforces_blocking!: i64",
+                enforces_blocking as "enforces_blocking!: bool",
                 blocking_disabled_statuses,
                 blocking_source_statuses,
                 created_at as "created_at!: DateTime<Utc>", 
@@ -233,10 +238,10 @@ impl TaskRelationshipType {
             data.type_name,
             data.display_name,
             data.description,
-            data.is_directional as i64,
+            is_directional_i64,
             data.forward_label,
             data.reverse_label,
-            data.enforces_blocking as i64,
+            enforces_blocking_i64,
             blocking_disabled_json,
             blocking_source_json
         )
@@ -285,6 +290,9 @@ impl TaskRelationshipType {
             ));
         }
 
+        let is_directional_i64 = is_directional as i64;
+        let enforces_blocking_i64 = enforces_blocking as i64;
+
         sqlx::query_as!(
             TaskRelationshipType,
             r#"UPDATE task_relationship_types
@@ -304,11 +312,11 @@ impl TaskRelationshipType {
                    type_name, 
                    display_name, 
                    description,
-                   is_system as "is_system!: i64",
-                   is_directional as "is_directional!: i64",
+                   is_system as "is_system!: bool",
+                   is_directional as "is_directional!: bool",
                    forward_label,
                    reverse_label,
-                   enforces_blocking as "enforces_blocking!: i64",
+                   enforces_blocking as "enforces_blocking!: bool",
                    blocking_disabled_statuses,
                    blocking_source_statuses,
                    created_at as "created_at!: DateTime<Utc>", 
@@ -317,10 +325,10 @@ impl TaskRelationshipType {
             type_name,
             display_name,
             description,
-            is_directional as i64,
+            is_directional_i64,
             forward_label,
             reverse_label,
-            enforces_blocking as i64,
+            enforces_blocking_i64,
             blocking_disabled_json,
             blocking_source_json
         )

@@ -182,7 +182,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
         next: axum::middleware::Next,
     ) -> Result<axum::response::Response, ApiError> {
         // Verify task exists and relationship belongs to task
-        let _task = Task::find_by_id(&deployment.db().pool, task_id)
+        let task = Task::find_by_id(&deployment.db().pool, task_id)
             .await?
             .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
 
@@ -197,6 +197,8 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
         }
 
         let mut request = request;
+        // Insert both task and relationship into extensions
+        request.extensions_mut().insert(task);
         request.extensions_mut().insert(relationship);
         Ok(next.run(request).await)
     }
@@ -207,8 +209,8 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
 
     let inner = Router::new()
         .route("/", get(get_task_relationships).post(create_task_relationship))
-        .nest("/{relationship_id}", relationship_id_router)
-        .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
+        .layer(from_fn_with_state(deployment.clone(), load_task_middleware))
+        .nest("/{relationship_id}", relationship_id_router);
 
     Router::new().nest("/tasks/{task_id}/relationships", inner)
 }

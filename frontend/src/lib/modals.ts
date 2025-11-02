@@ -3,6 +3,12 @@ import type {
   FolderPickerDialogProps,
   TagEditDialogProps,
   TagEditResult,
+  RelationshipTypeEditDialogProps,
+  RelationshipTypeEditResult,
+  TaskTemplateEditDialogProps,
+  TaskTemplateEditResult,
+  TaskTemplateGroupEditDialogProps,
+  TaskTemplateGroupEditResult,
   ProjectFormDialogProps,
   ProjectFormDialogResult,
 } from '@/components/dialogs';
@@ -41,6 +47,48 @@ export function showFolderPicker(
  */
 export function showTagEdit(props: TagEditDialogProps): Promise<TagEditResult> {
   return showModal<TagEditResult>('tag-edit', props as Record<string, unknown>);
+}
+
+/**
+ * Show relationship type edit dialog
+ * @param props - Props for relationship type edit dialog
+ * @returns Promise that resolves with 'saved' or 'canceled'
+ */
+export function showRelationshipTypeEdit(
+  props: RelationshipTypeEditDialogProps
+): Promise<RelationshipTypeEditResult> {
+  return showModal<RelationshipTypeEditResult>(
+    'relationship-type-edit',
+    props as Record<string, unknown>
+  );
+}
+
+/**
+ * Show task template edit dialog
+ * @param props - Props for template edit dialog
+ * @returns Promise that resolves with 'saved' or 'canceled'
+ */
+export function showTaskTemplateEdit(
+  props: TaskTemplateEditDialogProps
+): Promise<TaskTemplateEditResult> {
+  return showModal<TaskTemplateEditResult>(
+    'task-template-edit',
+    props as Record<string, unknown>
+  );
+}
+
+/**
+ * Show task template group edit dialog
+ * @param props - Props for template group edit dialog
+ * @returns Promise that resolves with 'saved' or 'canceled'
+ */
+export function showTaskTemplateGroupEdit(
+  props: TaskTemplateGroupEditDialogProps
+): Promise<TaskTemplateGroupEditResult> {
+  return showModal<TaskTemplateGroupEditResult>(
+    'task-template-group-edit',
+    props as Record<string, unknown>
+  );
 }
 
 /**
