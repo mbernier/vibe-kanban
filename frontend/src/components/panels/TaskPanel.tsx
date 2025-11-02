@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { PlusIcon } from 'lucide-react';
 import NiceModal from '@ebay/nice-modal-react';
 import MarkdownRenderer from '@/components/ui/markdown-renderer';
+import { TaskRelationshipsSection } from '../tasks/TaskRelationshipsSection';
 
 interface TaskPanelProps {
   task: TaskWithAttemptStatus | null;
@@ -79,6 +80,20 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
             <MarkdownRenderer content={titleContent} />
             {descriptionContent && (
               <MarkdownRenderer content={descriptionContent} />
+            )}
+            
+            {projectId && (
+              <div className="mt-4 pt-4 border-t">
+                <TaskRelationshipsSection
+                  task={task}
+                  projectId={projectId}
+                  onNavigateToTask={(taskId) => {
+                    if (projectId) {
+                      navigate(paths.task(projectId, taskId));
+                    }
+                  }}
+                />
+              </div>
             )}
           </div>
 

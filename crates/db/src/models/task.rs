@@ -380,4 +380,55 @@ ORDER BY t.created_at DESC"#,
             children,
         })
     }
+
+    pub async fn find_with_relationships(
+        pool: &SqlitePool,
+        id: Uuid,
+    ) -> Result<(Self, Vec<super::task_relationship::TaskRelationshipGrouped>), sqlx::Error> {
+        let task = Self::find_by_id(pool, id)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+        let relationships = super::task_relationship::TaskRelationship::find_by_task(pool, id).await?;
+        Ok((task, relationships))
+    }
+
+    pub async fn check_blocking_status(
+        pool: &SqlitePool,
+        id: Uuid,
+        new_status: TaskStatus,
+    ) -> Result<(), String> {
+        // Find all blocking relationships
+        let blocking_rels = super::task_relationship::TaskRelationship::find_blocking_relationships(pool, id).await
+            .map_err(|e| format!("Database error: {}", e))?;
+
+        if blocking_rels.is_empty() {
+            return Ok(());
+        }
+
+        // Get all relationship types that enforce blocking
+        let mut blocking_types = std::collections::HashSet::new();
+        for (rel, _source_task) in &blocking_rels {
+            blocking_types.insert(rel.relationship_type_id);
+        }
+
+        // Check each blocking type
+        for type_id in blocking_types {
+            let rel_type = super::task_relationship_type::TaskRelationshipType::find_by_id(pool, type_id)
+                .await
+                .map_err(|e| format!("Failed to load relationship type: {}", e))?
+                .ok_or_else(|| format!("Relationship type not found: {}", type_id))?;
+
+            // Get source task statuses for this type
+            let source_statuses: Vec<TaskStatus> = blocking_rels
+                .iter()
+                .filter(|(rel, _)| rel.relationship_type_id == type_id)
+                .map(|(_, source_task)| source_task.status.clone())
+                .collect();
+
+            // Validate blocking status
+            rel_type.validate_blocking_status(&new_status, &source_statuses)?;
+        }
+
+        Ok(())
+    }
 }

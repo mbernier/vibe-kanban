@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO task_relationships (\n                id, source_task_id, target_task_id, relationship_type_id, data, note\n            )\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING \n                id as \"id!: Uuid\",\n                source_task_id as \"source_task_id!: Uuid\",\n                target_task_id as \"target_task_id!: Uuid\",\n                relationship_type_id as \"relationship_type_id!: Uuid\",\n                data,\n                note,\n                created_at as \"created_at!: DateTime<Utc>\",\n                updated_at as \"updated_at!: DateTime<Utc>\",\n                NULL as \"relationship_type_name: String\",\n                NULL as \"is_directional: bool\",\n                NULL as \"forward_label: String\",\n                NULL as \"reverse_label: String\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "source_task_id!: Uuid",
+        "ordinal": 1,
+        "type_info": "Blob"
+      },
+      {
+        "name": "target_task_id!: Uuid",
+        "ordinal": 2,
+        "type_info": "Blob"
+      },
+      {
+        "name": "relationship_type_id!: Uuid",
+        "ordinal": 3,
+        "type_info": "Blob"
+      },
+      {
+        "name": "data",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "note",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "relationship_type_name: String",
+        "ordinal": 8,
+        "type_info": "Null"
+      },
+      {
+        "name": "is_directional: bool",
+        "ordinal": 9,
+        "type_info": "Null"
+      },
+      {
+        "name": "forward_label: String",
+        "ordinal": 10,
+        "type_info": "Null"
+      },
+      {
+        "name": "reverse_label: String",
+        "ordinal": 11,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "ba80affca8398081c8dc6c6694b60e88f22edc22d16f44214c23e8b6227c8e7d"
+}

@@ -25,6 +25,15 @@ impl DBService {
         Ok(DBService { pool })
     }
 
+    /// Create a DBService with a custom database path (useful for testing)
+    pub async fn new_with_path(db_path: &std::path::Path) -> Result<DBService, Error> {
+        let database_url = format!("sqlite://{}", db_path.to_string_lossy());
+        let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);
+        let pool = SqlitePool::connect_with(options).await?;
+        sqlx::migrate!("./migrations").run(&pool).await?;
+        Ok(DBService { pool })
+    }
+
     pub async fn new_with_after_connect<F>(after_connect: F) -> Result<DBService, Error>
     where
         F: for<'a> Fn(

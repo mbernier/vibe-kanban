@@ -10,7 +10,11 @@
         "agents": "Agents",
         "agentsDesc": "Coding agent configurations",
         "mcp": "MCP Servers",
-        "mcpDesc": "Model Context Protocol servers"
+        "mcpDesc": "Model Context Protocol servers",
+        "relationship-types": "Relationship Types",
+        "relationship-typesDesc": "Manage task relationship types",
+        "task-templates": "Task Templates",
+        "task-templatesDesc": "Create and manage ticket templates"
       }
     },
     "general": {
@@ -297,6 +301,125 @@
         "unsavedChanges": "• You have unsaved changes",
         "discard": "Discard",
         "confirmSwitch": "You have unsaved changes. Are you sure you want to switch projects? Your changes will be lost."
+      }
+    },
+    "relationshipTypes": {
+      "title": "Relationship Types",
+      "description": "Manage relationship types that define how tasks can be linked together.",
+      "manager": {
+        "title": "Relationship Types",
+        "addType": "Add Type",
+        "noTypes": "No relationship types",
+        "table": {
+          "displayName": "Display Name",
+          "typeName": "Type Name",
+          "directional": "Directional",
+          "blocking": "Blocking",
+          "actions": "Actions"
+        },
+        "actions": {
+          "editType": "Edit Type",
+          "deleteType": "Delete Type",
+          "cannotDelete": "Cannot delete system type"
+        },
+        "cannotDeleteSystem": "Cannot delete system relationship types",
+        "deleteConfirm": "Are you sure you want to delete \"{{typeName}}\"?",
+        "deleteError": "Failed to delete relationship type"
+      },
+      "dialog": {
+        "createTitle": "Create Relationship Type",
+        "editTitle": "Edit Relationship Type",
+        "errors": {
+          "nameRequired": "Type name is required"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create",
+          "update": "Update"
+        }
+      }
+    },
+    "taskTemplates": {
+      "title": "Task Templates",
+      "description": "Create reusable ticket templates organized in groups. Use ~template:name in task descriptions to reference templates.",
+      "manager": {
+        "title": "Templates & Groups",
+        "addGroup": "Add Group",
+        "addTemplate": "Add Template",
+        "groups": "Groups",
+        "templates": "All Templates",
+        "noGroups": "No groups yet. Create a group to organize templates.",
+        "noTemplates": "No templates yet. Create reusable ticket templates. Use ~template:name in task descriptions.",
+        "editGroup": "Edit group",
+        "deleteGroup": "Delete group",
+        "addTemplateToGroup": "Add template to group",
+        "editTemplate": "Edit template",
+        "deleteTemplate": "Delete template",
+        "deleteTemplateConfirm": "Are you sure you want to delete \"{{templateName}}\"?",
+        "deleteTemplateError": "Failed to delete template",
+        "deleteGroupConfirm": "Are you sure you want to delete \"{{groupName}}\"?",
+        "deleteGroupError": "Failed to delete group"
+      },
+      "dialog": {
+        "createTitle": "Create Template",
+        "editTitle": "Edit Template",
+        "group": {
+          "label": "Group",
+          "placeholder": "No group (top level)",
+          "none": "No group"
+        },
+        "templateName": {
+          "label": "Template Name",
+          "hint": "Use this name with ~template: in task descriptions: ~template:{{templateName}}",
+          "placeholder": "e.g., bug_report, test_plan"
+        },
+        "templateTitle": {
+          "label": "Template Title",
+          "placeholder": "e.g., Bug Report Template"
+        },
+        "ticketTitle": {
+          "label": "Ticket Title",
+          "placeholder": "Title for tickets created from this template"
+        },
+        "ticketDescription": {
+          "label": "Ticket Description",
+          "placeholder": "Description for tickets created from this template"
+        },
+        "errors": {
+          "nameRequired": "Template name is required",
+          "titleRequired": "Template title is required",
+          "ticketTitleRequired": "Ticket title is required",
+          "ticketDescriptionRequired": "Ticket description is required",
+          "saveFailed": "Failed to save template"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create",
+          "update": "Update"
+        }
+      },
+      "groupDialog": {
+        "createTitle": "Create Group",
+        "editTitle": "Edit Group",
+        "name": {
+          "label": "Group Name",
+          "placeholder": "e.g., Bug Reports, Test Plans"
+        },
+        "parentGroup": {
+          "label": "Parent Group",
+          "placeholder": "No parent (top level)",
+          "none": "No parent",
+          "hint": "Maximum depth is 3 levels"
+        },
+        "errors": {
+          "nameRequired": "Group name is required",
+          "saveFailed": "Failed to save group"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create",
+          "update": "Update"
+        }
       }
     }
   }

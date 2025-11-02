@@ -1,0 +1,217 @@
+use axum::{
+    Extension, Json, Router,
+    extract::{Path, State},
+    middleware::from_fn_with_state,
+    response::Json as ResponseJson,
+    routing::{get, post, put, delete},
+};
+use db::models::{
+    task::Task,
+    task_relationship::{
+        CreateTaskRelationship, TaskRelationship, TaskRelationshipGrouped, UpdateTaskRelationship,
+    },
+};
+use deployment::Deployment;
+use utils::response::ApiResponse;
+use uuid::Uuid;
+
+use crate::{DeploymentImpl, error::ApiError, middleware::load_task_middleware};
+
+pub async fn get_task_relationships(
+    Extension(task): Extension<Task>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<Vec<TaskRelationshipGrouped>>>, ApiError> {
+    let relationships = TaskRelationship::find_by_task(&deployment.db().pool, task.id).await?;
+    Ok(ResponseJson(ApiResponse::success(relationships)))
+}
+
+pub async fn create_task_relationship(
+    Extension(task): Extension<Task>,
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<CreateTaskRelationship>,
+) -> Result<ResponseJson<ApiResponse<TaskRelationship>>, ApiError> {
+    // Verify target task exists
+    let _target_task = Task::find_by_id(&deployment.db().pool, payload.target_task_id)
+        .await?
+        .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+
+    // Resolve relationship_type_id from either relationship_type_id or relationship_type (type_name)
+    let relationship_type_id = if let Some(id) = payload.relationship_type_id {
+        id
+    } else if let Some(type_name) = payload.relationship_type {
+        let rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_type_name(
+            &deployment.db().pool,
+            &type_name,
+        )
+        .await?
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!("Relationship type '{}' not found", type_name))
+        })?;
+        rel_type.id
+    } else {
+        return Err(ApiError::BadRequest(
+            "Either relationship_type_id or relationship_type (type_name) is required".to_string(),
+        ));
+    };
+
+    // Verify relationship type exists
+    let _rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_id(
+        &deployment.db().pool,
+        relationship_type_id,
+    )
+    .await?
+    .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+
+    // Create relationship with resolved ID
+    let create_payload = CreateTaskRelationship {
+        target_task_id: payload.target_task_id,
+        relationship_type_id: Some(relationship_type_id),
+        relationship_type: None,
+        data: payload.data,
+        note: payload.note,
+    };
+
+    let relationship = TaskRelationship::create(&deployment.db().pool, task.id, &create_payload).await?;
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_relationship_created",
+            serde_json::json!({
+                "relationship_id": relationship.id.to_string(),
+                "task_id": task.id.to_string(),
+                "target_task_id": payload.target_task_id.to_string(),
+                "relationship_type_id": relationship_type_id.to_string(),
+            }),
+        )
+        .await;
+
+    Ok(ResponseJson(ApiResponse::success(relationship)))
+}
+
+pub async fn update_task_relationship(
+    Extension(task): Extension<Task>,
+    Extension(relationship): Extension<TaskRelationship>,
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<UpdateTaskRelationship>,
+) -> Result<ResponseJson<ApiResponse<TaskRelationship>>, ApiError> {
+    // Verify target task exists if being changed
+    if let Some(target_task_id) = payload.target_task_id {
+        let _target_task = Task::find_by_id(&deployment.db().pool, target_task_id)
+            .await?
+            .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+    }
+
+    // Resolve relationship_type_id if relationship_type (type_name) is provided
+    let relationship_type_id = if let Some(id) = payload.relationship_type_id {
+        Some(id)
+    } else if let Some(type_name) = payload.relationship_type {
+        let rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_type_name(
+            &deployment.db().pool,
+            &type_name,
+        )
+        .await?
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!("Relationship type '{}' not found", type_name))
+        })?;
+        Some(rel_type.id)
+    } else {
+        None
+    };
+
+    // Verify relationship type exists if being changed
+    if let Some(rel_type_id) = relationship_type_id {
+        let _rel_type = db::models::task_relationship_type::TaskRelationshipType::find_by_id(
+            &deployment.db().pool,
+            rel_type_id,
+        )
+        .await?
+        .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+    }
+
+    // Update with resolved ID
+    let update_payload = UpdateTaskRelationship {
+        target_task_id: payload.target_task_id,
+        relationship_type_id,
+        relationship_type: None,
+        data: payload.data,
+        note: payload.note,
+    };
+
+    let updated_relationship = TaskRelationship::update(&deployment.db().pool, relationship.id, &update_payload).await?;
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_relationship_updated",
+            serde_json::json!({
+                "relationship_id": relationship.id.to_string(),
+                "task_id": task.id.to_string(),
+            }),
+        )
+        .await;
+
+    Ok(ResponseJson(ApiResponse::success(updated_relationship)))
+}
+
+pub async fn delete_task_relationship(
+    Extension(task): Extension<Task>,
+    Extension(relationship): Extension<TaskRelationship>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<()>>, ApiError> {
+    let rows_affected = TaskRelationship::delete(&deployment.db().pool, relationship.id).await?;
+    if rows_affected == 0 {
+        Err(ApiError::Database(sqlx::Error::RowNotFound))
+    } else {
+        deployment
+            .track_if_analytics_allowed(
+                "task_relationship_deleted",
+                serde_json::json!({
+                    "relationship_id": relationship.id.to_string(),
+                    "task_id": task.id.to_string(),
+                }),
+            )
+            .await;
+        Ok(ResponseJson(ApiResponse::success(())))
+    }
+}
+
+pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    async fn load_relationship_middleware_inner(
+        Path((task_id, relationship_id)): Path<(Uuid, Uuid)>,
+        State(deployment): State<DeploymentImpl>,
+        request: axum::http::Request<axum::body::Body>,
+        next: axum::middleware::Next,
+    ) -> Result<axum::response::Response, ApiError> {
+        // Verify task exists and relationship belongs to task
+        let task = Task::find_by_id(&deployment.db().pool, task_id)
+            .await?
+            .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+
+        let relationship = TaskRelationship::find_by_id(&deployment.db().pool, relationship_id)
+            .await?
+            .ok_or(ApiError::Database(sqlx::Error::RowNotFound))?;
+
+        if relationship.source_task_id != task_id && relationship.target_task_id != task_id {
+            return Err(ApiError::BadRequest(
+                "Relationship does not belong to this task".to_string(),
+            ));
+        }
+
+        let mut request = request;
+        // Insert both task and relationship into extensions
+        request.extensions_mut().insert(task);
+        request.extensions_mut().insert(relationship);
+        Ok(next.run(request).await)
+    }
+
+    let relationship_id_router = Router::new()
+        .route("/", put(update_task_relationship).delete(delete_task_relationship))
+        .layer(from_fn_with_state(deployment.clone(), load_relationship_middleware_inner));
+
+    let inner = Router::new()
+        .route("/", get(get_task_relationships).post(create_task_relationship))
+        .layer(from_fn_with_state(deployment.clone(), load_task_middleware))
+        .nest("/{relationship_id}", relationship_id_router);
+
+    Router::new().nest("/tasks/{task_id}/relationships", inner)
+}
+

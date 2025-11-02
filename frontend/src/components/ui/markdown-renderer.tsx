@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button.tsx';
 import { Check, Clipboard } from 'lucide-react';
 import { writeClipboardViaBridge } from '@/vscode/bridge';
+import TemplateReference from '@/components/TemplateReference.tsx';
 
 const HIGHLIGHT_LINK =
   'rounded-sm bg-muted/50 px-1 py-0.5 underline-offset-2 transition-colors';
@@ -49,6 +50,33 @@ function LinkOverride({
   title?: string;
 }) {
   const rawHref = typeof href === 'string' ? href : '';
+  
+  // Check if this is a template reference link
+  if (rawHref.startsWith('data:template/')) {
+    try {
+      const metadataJson = rawHref.replace('data:template/', '');
+      // Try parsing directly first, then URL decode if needed
+      let metadata;
+      try {
+        metadata = JSON.parse(metadataJson);
+      } catch {
+        // If direct parse fails, try URL decoding
+        metadata = JSON.parse(decodeURIComponent(metadataJson));
+      }
+      
+      if (metadata.type === 'template_reference' && metadata.template_id) {
+        return (
+          <TemplateReference metadata={metadata}>
+            {children}
+          </TemplateReference>
+        );
+      }
+    } catch (error) {
+      console.error('Failed to parse template reference metadata:', error);
+      // Fall through to default link handling
+    }
+  }
+  
   const safeHref = sanitizeHref(rawHref);
 
   const external = isExternalHref(safeHref);

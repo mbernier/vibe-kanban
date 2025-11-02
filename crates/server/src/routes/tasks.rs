@@ -16,10 +16,13 @@ use db::models::{
     image::TaskImage,
     task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
+    task_template::TaskTemplate,
 };
+use db::models::executor_session::ExecutorSession;
 use deployment::Deployment;
 use executors::profile::ExecutorProfileId;
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use services::services::container::{
     ContainerService, WorktreeCleanupData, cleanup_worktrees_direct,
@@ -30,6 +33,60 @@ use utils::response::ApiResponse;
 use uuid::Uuid;
 
 use crate::{DeploymentImpl, error::ApiError, middleware::load_task_middleware};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TemplateReferenceMetadata {
+    #[serde(rename = "type")]
+    ref_type: String,
+    template_id: String,
+    template_name: String,
+    template_title: String,
+}
+
+/// Process task description and replace ~template:name references with embedded metadata
+async fn process_template_references(
+    pool: &sqlx::SqlitePool,
+    description: Option<String>,
+) -> Result<Option<String>, sqlx::Error> {
+    let Some(description) = description else {
+        return Ok(None);
+    };
+
+    // Match ~template:name patterns
+    let re = Regex::new(r"~template:([a-zA-Z0-9_-]+)").unwrap();
+    let mut processed = description.clone();
+    let mut replacements = Vec::new();
+
+    // Find all matches and collect template names
+    for cap in re.captures_iter(&description) {
+        if let Some(template_name) = cap.get(1) {
+            let template_name = template_name.as_str();
+            
+            // Try to find the template
+            if let Ok(Some(template)) = TaskTemplate::find_by_template_name(pool, template_name).await {
+                let full_match = cap.get(0).unwrap().as_str();
+                let metadata = TemplateReferenceMetadata {
+                    ref_type: "template_reference".to_string(),
+                    template_id: template.id.to_string(),
+                    template_name: template.template_name.clone(),
+                    template_title: template.template_title.clone(),
+                };
+                
+                replacements.push((full_match.to_string(), metadata));
+            }
+        }
+    }
+
+    // Replace references with JSON metadata embedded in markdown
+    for (pattern, metadata) in replacements {
+        let metadata_json = serde_json::to_string(&metadata).unwrap_or_default();
+        // Embed as markdown with JSON data attribute: [~template:name](data:template/{metadata_json})
+        let replacement = format!("[{}](data:template/{})", pattern, metadata_json);
+        processed = processed.replace(&pattern, &replacement);
+    }
+
+    Ok(Some(processed))
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskQuery {
@@ -44,7 +101,14 @@ pub async fn get_tasks(
         Task::find_by_project_id_with_attempt_status(&deployment.db().pool, query.project_id)
             .await?;
 
-    Ok(ResponseJson(ApiResponse::success(tasks)))
+    // Process template references in descriptions
+    let mut processed_tasks = Vec::new();
+    for mut task in tasks {
+        task.task.description = process_template_references(&deployment.db().pool, task.task.description.clone()).await?;
+        processed_tasks.push(task);
+    }
+
+    Ok(ResponseJson(ApiResponse::success(processed_tasks)))
 }
 
 pub async fn stream_tasks_ws(
@@ -96,9 +160,40 @@ async fn handle_tasks_ws(
 
 pub async fn get_task(
     Extension(task): Extension<Task>,
-    State(_deployment): State<DeploymentImpl>,
+    State(deployment): State<DeploymentImpl>,
+    Query(_params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, ApiError> {
+    // Process template references in description
+    let processed_description = process_template_references(&deployment.db().pool, task.description.clone()).await?;
+    let mut task = task;
+    task.description = processed_description;
     Ok(ResponseJson(ApiResponse::success(task)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct TaskAttemptWithNotes {
+    pub attempt: TaskAttempt,
+    pub latest_summary: Option<String>,
+}
+
+pub async fn get_task_attempts_with_notes(
+    Extension(task): Extension<Task>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<Vec<TaskAttemptWithNotes>>>, ApiError> {
+    let pool = &deployment.db().pool;
+    let attempts = TaskAttempt::fetch_all(pool, Some(task.id)).await?;
+    // For each attempt, load the latest executor_session summary if present
+    let mut out: Vec<TaskAttemptWithNotes> = Vec::with_capacity(attempts.len());
+    for attempt in attempts {
+        // Fetch all sessions and take latest non-empty summary
+        let sessions = ExecutorSession::find_by_task_attempt_id(pool, attempt.id).await.unwrap_or_default();
+        let latest_summary = sessions
+            .into_iter()
+            .filter_map(|s| s.summary)
+            .last();
+        out.push(TaskAttemptWithNotes { attempt, latest_summary });
+    }
+    Ok(ResponseJson(ApiResponse::success(out)))
 }
 
 pub async fn create_task(
@@ -222,10 +317,18 @@ pub async fn update_task(
         Some(s) => Some(s),                     // Non-empty string = update description
         None => existing_task.description,      // Field omitted = keep existing
     };
+    let existing_status = existing_task.status.clone();
     let status = payload.status.unwrap_or(existing_task.status);
     let parent_task_attempt = payload
         .parent_task_attempt
         .or(existing_task.parent_task_attempt);
+
+    // Check blocking relationships if status is being changed
+    if status != existing_status {
+        Task::check_blocking_status(&deployment.db().pool, existing_task.id, status.clone())
+            .await
+            .map_err(|e| ApiError::BadRequest(e))?;
+    }
 
     let task = Task::update(
         &deployment.db().pool,
@@ -243,7 +346,12 @@ pub async fn update_task(
         TaskImage::associate_many_dedup(&deployment.db().pool, task.id, image_ids).await?;
     }
 
-    Ok(ResponseJson(ApiResponse::success(task)))
+    // Process template references in description before returning
+    let processed_description = process_template_references(&deployment.db().pool, task.description.clone()).await?;
+    let mut processed_task = task;
+    processed_task.description = processed_description;
+
+    Ok(ResponseJson(ApiResponse::success(processed_task)))
 }
 
 pub async fn delete_task(
@@ -297,6 +405,9 @@ pub async fn delete_task(
         let children_affected = Task::nullify_children_by_attempt_id(&mut *tx, attempt.id).await?;
         total_children_affected += children_affected;
     }
+
+    // Cascade delete relationships (foreign key will handle this, but we can also do it explicitly)
+    db::models::task_relationship::TaskRelationship::delete_by_task(&deployment.db().pool, task.id).await?;
 
     // Delete task from database (FK CASCADE will handle task_attempts)
     let rows_affected = Task::delete(&mut *tx, task.id).await?;
@@ -357,6 +468,7 @@ pub async fn delete_task(
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
     let task_id_router = Router::new()
         .route("/", get(get_task).put(update_task).delete(delete_task))
+        .route("/attempts-with-notes", get(get_task_attempts_with_notes))
         .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
 
     let inner = Router::new()

@@ -941,6 +941,7 @@ dependencies = [
  "executors",
  "futures-util",
  "regex",
+ "schemars 1.0.4",
  "sentry-tracing",
  "serde",
  "serde_json",

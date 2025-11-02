@@ -43,6 +43,21 @@ export {
   type TagEditResult,
 } from './tasks/TagEditDialog';
 export {
+  RelationshipTypeEditDialog,
+  type RelationshipTypeEditDialogProps,
+  type RelationshipTypeEditResult,
+} from './tasks/RelationshipTypeEditDialog';
+export {
+  TaskTemplateEditDialog,
+  type TaskTemplateEditDialogProps,
+  type TaskTemplateEditResult,
+} from './tasks/TaskTemplateEditDialog';
+export {
+  TaskTemplateGroupEditDialog,
+  type TaskTemplateGroupEditDialogProps,
+  type TaskTemplateGroupEditResult,
+} from './tasks/TaskTemplateGroupEditDialog';
+export {
   ChangeTargetBranchDialog,
   type ChangeTargetBranchDialogProps,
   type ChangeTargetBranchDialogResult,

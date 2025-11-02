@@ -13,6 +13,8 @@ import {
   GeneralSettings,
   McpSettings,
   ProjectSettings,
+  RelationshipTypesSettings,
+  TaskTemplatesSettings,
   SettingsLayout,
 } from '@/pages/settings/';
 import {
@@ -178,6 +180,8 @@ function AppContent() {
                   <Route path="projects" element={<ProjectSettings />} />
                   <Route path="agents" element={<AgentSettings />} />
                   <Route path="mcp" element={<McpSettings />} />
+                  <Route path="relationship-types" element={<RelationshipTypesSettings />} />
+                  <Route path="task-templates" element={<TaskTemplatesSettings />} />
                 </Route>
                 <Route
                   path="/mcp-servers"

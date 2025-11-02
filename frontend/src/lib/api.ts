@@ -33,6 +33,13 @@ import {
   UpdateProject,
   UpdateTask,
   UpdateTag,
+  TaskTemplate,
+  CreateTaskTemplate,
+  UpdateTaskTemplate,
+  TaskTemplateGroup,
+  TaskTemplateGroupWithChildren,
+  CreateTaskTemplateGroup,
+  UpdateTaskTemplateGroup,
   UserSystemInfo,
   GitHubServiceError,
   UpdateRetryFollowUpDraftRequest,
@@ -713,6 +720,97 @@ export const tagsApi = {
   },
 };
 
+// Task Template APIs (all templates are global)
+export const taskTemplatesApi = {
+  list: async (params?: { group_id?: string; search?: string }): Promise<TaskTemplate[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.group_id) {
+      queryParams.set('group_id', params.group_id);
+    }
+    if (params?.search) {
+      queryParams.set('search', params.search);
+    }
+    const queryString = queryParams.toString();
+    const response = await makeRequest(`/api/task-templates${queryString ? `?${queryString}` : ''}`);
+    return handleApiResponse<TaskTemplate[]>(response);
+  },
+
+  get: async (templateId: string): Promise<TaskTemplate> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`);
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  create: async (data: CreateTaskTemplate): Promise<TaskTemplate> => {
+    const response = await makeRequest('/api/task-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  update: async (templateId: string, data: UpdateTaskTemplate): Promise<TaskTemplate> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplate>(response);
+  },
+
+  delete: async (templateId: string): Promise<void> => {
+    const response = await makeRequest(`/api/task-templates/${templateId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
+// Task Template Group APIs
+export const taskTemplateGroupsApi = {
+  list: async (params?: { hierarchical?: boolean; parent_id?: string; search?: string }): Promise<TaskTemplateGroupWithChildren[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.hierarchical) {
+      queryParams.set('hierarchical', 'true');
+    }
+    if (params?.parent_id) {
+      queryParams.set('parent_id', params.parent_id);
+    }
+    if (params?.search) {
+      queryParams.set('search', params.search);
+    }
+    const queryString = queryParams.toString();
+    const response = await makeRequest(`/api/task-template-groups${queryString ? `?${queryString}` : ''}`);
+    return handleApiResponse<TaskTemplateGroupWithChildren[]>(response);
+  },
+
+  get: async (groupId: string): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`);
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  create: async (data: CreateTaskTemplateGroup): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest('/api/task-template-groups', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  update: async (groupId: string, data: UpdateTaskTemplateGroup): Promise<TaskTemplateGroup> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<TaskTemplateGroup>(response);
+  },
+
+  delete: async (groupId: string): Promise<void> => {
+    const response = await makeRequest(`/api/task-template-groups/${groupId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
 // MCP Servers APIs
 export const mcpServersApi = {
   load: async (query: McpServerQuery): Promise<GetMcpServerResponse> => {
@@ -843,5 +941,162 @@ export const approvalsApi = {
     });
 
     return handleApiResponse<ApprovalStatus>(res);
+  },
+};
+
+// Task Relationship Types API
+export const taskRelationshipTypesApi = {
+  list: async (search?: string): Promise<any[]> => {
+    const queryParam = search ? `?search=${encodeURIComponent(search)}` : '';
+    const response = await makeRequest(`/api/task-relationship-types${queryParam}`);
+    const types = await handleApiResponse<any[]>(response);
+    
+    // Parse JSON strings to arrays for blocking statuses
+    return types.map((type: any) => ({
+      ...type,
+      blocking_disabled_statuses: type.blocking_disabled_statuses
+        ? (typeof type.blocking_disabled_statuses === 'string'
+            ? JSON.parse(type.blocking_disabled_statuses)
+            : type.blocking_disabled_statuses)
+        : undefined,
+      blocking_source_statuses: type.blocking_source_statuses
+        ? (typeof type.blocking_source_statuses === 'string'
+            ? JSON.parse(type.blocking_source_statuses)
+            : type.blocking_source_statuses)
+        : undefined,
+    }));
+  },
+
+  get: async (typeId: string): Promise<any> => {
+    const response = await makeRequest(`/api/task-relationship-types/${typeId}`);
+    const type = await handleApiResponse<any>(response);
+    
+    // Parse JSON strings to arrays for blocking statuses
+    return {
+      ...type,
+      blocking_disabled_statuses: type.blocking_disabled_statuses
+        ? (typeof type.blocking_disabled_statuses === 'string'
+            ? JSON.parse(type.blocking_disabled_statuses)
+            : type.blocking_disabled_statuses)
+        : undefined,
+      blocking_source_statuses: type.blocking_source_statuses
+        ? (typeof type.blocking_source_statuses === 'string'
+            ? JSON.parse(type.blocking_source_statuses)
+            : type.blocking_source_statuses)
+        : undefined,
+    };
+  },
+
+  create: async (data: {
+    type_name: string;
+    display_name: string;
+    description?: string | null;
+    is_directional?: boolean;
+    forward_label?: string | null;
+    reverse_label?: string | null;
+    enforces_blocking?: boolean;
+    blocking_disabled_statuses?: string[];
+    blocking_source_statuses?: string[];
+  }): Promise<any> => {
+    const response = await makeRequest('/api/task-relationship-types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<any>(response);
+  },
+
+  update: async (
+    typeId: string,
+    data: {
+      type_name?: string | null;
+      display_name?: string | null;
+      description?: string | null;
+      is_directional?: boolean | null;
+      forward_label?: string | null;
+      reverse_label?: string | null;
+      enforces_blocking?: boolean | null;
+      blocking_disabled_statuses?: string[] | null;
+      blocking_source_statuses?: string[] | null;
+    }
+  ): Promise<any> => {
+    const response = await makeRequest(`/api/task-relationship-types/${typeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<any>(response);
+  },
+
+  delete: async (typeId: string): Promise<void> => {
+    const response = await makeRequest(`/api/task-relationship-types/${typeId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
+// Task Relationships API
+export const taskRelationshipsApi = {
+  getByTask: async (taskId: string): Promise<any> => {
+    const response = await makeRequest(`/api/tasks/${taskId}/relationships`);
+    return handleApiResponse<any>(response);
+  },
+
+  create: async (
+    taskId: string,
+    data: {
+      target_task_id: string;
+      relationship_type: string; // type_name
+      note?: string | null;
+      data?: Record<string, any> | null;
+    }
+  ): Promise<any> => {
+    const response = await makeRequest(`/api/tasks/${taskId}/relationships`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleApiResponse<any>(response);
+  },
+
+  update: async (
+    taskId: string,
+    relationshipId: string,
+    data: {
+      note?: string | null;
+      data?: Record<string, any> | null;
+    }
+  ): Promise<any> => {
+    const response = await makeRequest(
+      `/api/tasks/${taskId}/relationships/${relationshipId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+    return handleApiResponse<any>(response);
+  },
+
+  delete: async (taskId: string, relationshipId: string): Promise<void> => {
+    const response = await makeRequest(
+      `/api/tasks/${taskId}/relationships/${relationshipId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    return handleApiResponse<void>(response);
+  },
+
+  searchTasks: async (query: string, projectId?: string): Promise<Task[]> => {
+    if (!projectId) {
+      return [];
+    }
+    // Get all tasks for the project and filter client-side
+    const allTasks = await tasksApi.getAll(projectId);
+    const queryLower = query.toLowerCase();
+    return allTasks.filter(
+      (task) =>
+        task.id.toLowerCase().includes(queryLower) ||
+        task.title.toLowerCase().includes(queryLower) ||
+        (task.description && task.description.toLowerCase().includes(queryLower))
+    );
   },
 };

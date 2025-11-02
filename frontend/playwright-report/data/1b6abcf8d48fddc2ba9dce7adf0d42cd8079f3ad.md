@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - generic [ref=e8]: Development Mode - This is a development build
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - link [ref=e13] [cursor=pointer]:
+        - /url: /projects
+        - img [ref=e14]
+      - link "Join our Discord" [ref=e16] [cursor=pointer]:
+        - /url: https://discord.gg/AC4nwVtJM3
+        - img [ref=e18]
+        - generic [ref=e20]: 37 online
+    - generic [ref=e21]:
+      - img [ref=e22]
+      - textbox "Search..." [ref=e25]
+    - generic [ref=e26]:
+      - button "Open in VS Code" [ref=e27] [cursor=pointer]:
+        - img "VS Code" [ref=e28]
+        - generic [ref=e29]: Open in VS Code
+      - button "Create new task" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+      - link "Settings" [ref=e32] [cursor=pointer]:
+        - /url: /settings/projects?projectId=project-1
+        - img [ref=e33]
+      - button "Main navigation" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+  - generic [ref=e39]:
+    - alert [ref=e40]:
+      - heading "Reconnecting" [level=5] [ref=e41]:
+        - img [ref=e42]
+        - text: Reconnecting
+      - generic [ref=e44]: Connection failed
+    - region "Kanban board" [ref=e47]:
+      - generic [ref=e50]:
+        - paragraph [ref=e51]: No tasks found for this project.
+        - button "Create First Task" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: Create First Task
+```

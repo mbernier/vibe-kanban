@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE task_template_groups\n               SET name = $2, parent_group_id = $3, updated_at = datetime('now', 'subsec')\n               WHERE id = $1\n               RETURNING \n                   id as \"id!: Uuid\", \n                   name,\n                   parent_group_id as \"parent_group_id: Uuid\",\n                   created_at as \"created_at!: DateTime<Utc>\", \n                   updated_at as \"updated_at!: DateTime<Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_group_id: Uuid",
+        "ordinal": 2,
+        "type_info": "Blob"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "424f198720a69194736b1d37ca0e1839df8aa3e8a8b1af9337ff9ec4ea9b89a9"
+}
