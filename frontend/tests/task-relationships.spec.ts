@@ -1,4 +1,12 @@
 import { test, expect } from '@playwright/test';
+import {
+  setupTaskRelationshipsMocks,
+  defaultRelationshipTypes,
+  mockTask,
+  mockTargetTask,
+  type MockRelationshipGrouped,
+  type MockTask,
+} from './helpers/api-mocks';
 
 test.describe('Task Relationships Section', () => {
   test.beforeEach(async ({ page }) => {

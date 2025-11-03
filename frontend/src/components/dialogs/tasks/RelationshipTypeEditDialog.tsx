@@ -16,7 +16,6 @@ import {
 import { Loader2 } from 'lucide-react';
 import { taskRelationshipTypesApi } from '@/lib/api';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
-import { Badge } from '@/components/ui/badge';
 
 interface RelationshipType {
   id: string;

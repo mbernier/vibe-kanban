@@ -85,6 +85,29 @@ export const defaultRelationshipTypes: MockRelationshipType[] = [
 ];
 
 /**
+ * Mock task data for testing
+ */
+export const mockTask: MockTask = {
+  id: 'task-1',
+  title: 'Test Task',
+  description: 'A test task',
+  status: 'todo',
+  project_id: 'project-1',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+export const mockTargetTask: MockTask = {
+  id: 'task-2',
+  title: 'Test Task 2',
+  description: 'Another test task',
+  status: 'todo',
+  project_id: 'project-1',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+/**
  * Setup API route handlers for relationship types
  */
 export function setupRelationshipTypesMocks(page: any, types: MockRelationshipType[] = defaultRelationshipTypes) {
@@ -107,7 +130,12 @@ export function setupRelationshipTypesMocks(page: any, types: MockRelationshipTy
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(typesList),
+        body: JSON.stringify({
+          success: true,
+          data: typesList,
+          error_data: null,
+          message: null,
+        }),
       });
     } else if (method === 'POST') {
       const body = route.request().postDataJSON();
@@ -132,7 +160,12 @@ export function setupRelationshipTypesMocks(page: any, types: MockRelationshipTy
       route.fulfill({
         status: 201,
         contentType: 'application/json',
-        body: JSON.stringify(newType),
+        body: JSON.stringify({
+          success: true,
+          data: newType,
+          error_data: null,
+          message: null,
+        }),
       });
     } else {
       route.continue();
@@ -152,13 +185,23 @@ export function setupRelationshipTypesMocks(page: any, types: MockRelationshipTy
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(type),
+          body: JSON.stringify({
+            success: true,
+            data: type,
+            error_data: null,
+            message: null,
+          }),
         });
       } else {
         route.fulfill({
           status: 404,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'Not found' }),
+          body: JSON.stringify({
+            success: false,
+            data: null,
+            error_data: null,
+            message: 'Not found',
+          }),
         });
       }
     } else if (method === 'PUT') {
@@ -174,13 +217,23 @@ export function setupRelationshipTypesMocks(page: any, types: MockRelationshipTy
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(updatedType),
+          body: JSON.stringify({
+            success: true,
+            data: updatedType,
+            error_data: null,
+            message: null,
+          }),
         });
       } else {
         route.fulfill({
           status: 404,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'Not found' }),
+          body: JSON.stringify({
+            success: false,
+            data: null,
+            error_data: null,
+            message: 'Not found',
+          }),
         });
       }
     } else if (method === 'DELETE') {
@@ -189,13 +242,23 @@ export function setupRelationshipTypesMocks(page: any, types: MockRelationshipTy
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ success: true }),
+          body: JSON.stringify({
+            success: true,
+            data: null,
+            error_data: null,
+            message: null,
+          }),
         });
       } else {
         route.fulfill({
           status: 403,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'Cannot delete system type' }),
+          body: JSON.stringify({
+            success: false,
+            data: null,
+            error_data: null,
+            message: 'Cannot delete system type',
+          }),
         });
       }
     } else {
@@ -217,7 +280,12 @@ export function setupTaskRelationshipsMocks(
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(relationships),
+        body: JSON.stringify({
+          success: true,
+          data: relationships,
+          error_data: null,
+          message: null,
+        }),
       });
     } else {
       route.continue();
@@ -243,7 +311,12 @@ export function setupTaskRelationshipsMocks(
       route.fulfill({
         status: 201,
         contentType: 'application/json',
-        body: JSON.stringify(newRelationship),
+        body: JSON.stringify({
+          success: true,
+          data: newRelationship,
+          error_data: null,
+          message: null,
+        }),
       });
     } else {
       route.continue();
@@ -256,7 +329,12 @@ export function setupTaskRelationshipsMocks(
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ success: true }),
+        body: JSON.stringify({
+          success: true,
+          data: null,
+          error_data: null,
+          message: null,
+        }),
       });
     } else {
       route.continue();
@@ -295,7 +373,12 @@ export function setupTaskRelationshipsMocks(
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockTasks),
+      body: JSON.stringify({
+        success: true,
+        data: mockTasks,
+        error_data: null,
+        message: null,
+      }),
     });
   });
 }
@@ -309,7 +392,12 @@ export function setupTaskMocks(page: any, task: MockTask) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(task),
+      body: JSON.stringify({
+        success: true,
+        data: task,
+        error_data: null,
+        message: null,
+      }),
     });
   });
 }

@@ -154,10 +154,6 @@ export function TaskSearchAutocomplete({
     inputRef.current?.blur();
   };
 
-  const formatTaskTitle = (task: Task) => {
-    const shortId = task.id.substring(0, 8);
-    return `${shortId} - ${task.title}`;
-  };
 
   return (
     <div className={cn('relative', className)}>

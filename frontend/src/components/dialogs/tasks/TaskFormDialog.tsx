@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings2, ChevronRight } from 'lucide-react';
+import { Settings2, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ImageUploadSection,
@@ -21,29 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { imagesApi, projectsApi, attemptsApi } from '@/lib/api';
+import { imagesApi, projectsApi, attemptsApi, taskRelationshipsApi } from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
 import { useUserSystem } from '@/components/config-provider';
 import { ExecutorProfileSelector } from '@/components/settings';
 import BranchSelector from '@/components/tasks/BranchSelector';
+import { TaskSearchAutocomplete } from '@/components/tasks/TaskSearchAutocomplete';
+import { RelationshipTypeSelect } from '@/components/tasks/RelationshipTypeSelect';
+import { Textarea } from '@/components/ui/textarea';
+import { Trash2 } from 'lucide-react';
 import type {
   TaskStatus,
   ImageResponse,
   GitBranch,
   ExecutorProfileId,
+  Task,
 } from 'shared/types';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { useKeySubmitTask, useKeySubmitTaskAlt, Scope } from '@/keyboard';
-
-interface Task {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface TaskFormDialogProps {
   task?: Task | null; // Optional for create mode
@@ -83,6 +78,20 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       useState<boolean>(false);
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+    
+    // Relationship creation state (only for create mode)
+    const [relationshipsToCreate, setRelationshipsToCreate] = useState<
+      Array<{
+        relationshipType: string;
+        targetTask: Task;
+        note: string;
+      }>
+    >([]);
+    const [isAddingRelationship, setIsAddingRelationship] = useState(false);
+    const [currentRelationshipType, setCurrentRelationshipType] = useState<string>('');
+    const [currentRelationshipTask, setCurrentRelationshipTask] = useState<Task | null>(null);
+    const [currentRelationshipNote, setCurrentRelationshipNote] = useState<string>('');
+    const [currentRelationshipSearchValue, setCurrentRelationshipSearchValue] = useState<string>('');
 
     const isEditMode = Boolean(task);
 
@@ -90,7 +99,11 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const hasUnsavedChanges = useCallback(() => {
       if (!isEditMode) {
         // Create mode - warn when there's content
-        return title.trim() !== '' || description.trim() !== '';
+        return (
+          title.trim() !== '' ||
+          description.trim() !== '' ||
+          relationshipsToCreate.length > 0
+        );
       } else if (task) {
         // Edit mode - warn when current values differ from original task
         const titleChanged = title.trim() !== task.title.trim();
@@ -100,7 +113,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         return titleChanged || descriptionChanged || statusChanged;
       }
       return false;
-    }, [title, description, status, isEditMode, task]);
+    }, [title, description, status, isEditMode, task, relationshipsToCreate]);
 
     // Warn on browser/tab close if there are unsaved changes
     useEffect(() => {
@@ -156,6 +169,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setSelectedBranch('');
         setSelectedExecutorProfile(system.config?.executor_profile || null);
         setQuickstartExpanded(false);
+        setRelationshipsToCreate([]);
+        setIsAddingRelationship(false);
+        setCurrentRelationshipType('');
+        setCurrentRelationshipTask(null);
+        setCurrentRelationshipSearchValue('');
+        setCurrentRelationshipNote('');
       }
     }, [task, initialTask, modal.visible, system.config?.executor_profile]);
 
@@ -299,20 +318,35 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             }
           );
         } else {
-          await createTask.mutateAsync(
+          const createdTask = await createTask.mutateAsync(
             {
               project_id: projectId,
               title,
               description: description,
               parent_task_attempt: parentTaskAttemptId || null,
               image_ids: imageIds || null,
-            },
-            {
-              onSuccess: () => {
-                modal.hide();
-              },
             }
           );
+
+          // Create relationships if any were added
+          if (relationshipsToCreate.length > 0 && createdTask?.id) {
+            try {
+              await Promise.all(
+                relationshipsToCreate.map((rel) =>
+                  taskRelationshipsApi.create(createdTask.id, {
+                    target_task_id: rel.targetTask.id,
+                    relationship_type: rel.relationshipType,
+                    note: rel.note.trim() || null,
+                  })
+                )
+              );
+            } catch (error) {
+              console.error('Failed to create relationships:', error);
+              // Don't block the modal from closing, but log the error
+            }
+          }
+
+          modal.hide();
         }
       } catch (error) {
         // Error already handled by mutation onError
@@ -334,6 +368,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       isSubmitting,
       isSubmittingAndStart,
       parentTaskAttemptId,
+      relationshipsToCreate,
     ]);
 
     const handleCreateAndStart = useCallback(async () => {
@@ -364,7 +399,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
           return;
         }
 
-        await createAndStart.mutateAsync(
+        const createdTask = await createAndStart.mutateAsync(
           {
             task: {
               project_id: projectId,
@@ -375,13 +410,28 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             },
             executor_profile_id: finalExecutorProfile,
             base_branch: selectedBranch,
-          },
-          {
-            onSuccess: () => {
-              modal.hide();
-            },
           }
         );
+
+        // Create relationships if any were added
+        if (relationshipsToCreate.length > 0 && createdTask?.id) {
+          try {
+            await Promise.all(
+              relationshipsToCreate.map((rel) =>
+                taskRelationshipsApi.create(createdTask.id, {
+                  target_task_id: rel.targetTask.id,
+                  relationship_type: rel.relationshipType,
+                  note: rel.note.trim() || null,
+                })
+              )
+            );
+          } catch (error) {
+            console.error('Failed to create relationships:', error);
+            // Don't block the modal from closing, but log the error
+          }
+        }
+
+        modal.hide();
       } catch (error) {
         // Error already handled by mutation onError
       } finally {
@@ -401,6 +451,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       isSubmitting,
       isSubmittingAndStart,
       parentTaskAttemptId,
+      relationshipsToCreate,
     ]);
 
     const handleCancel = useCallback(() => {
@@ -530,6 +581,167 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 collapsible={true}
                 defaultExpanded={false}
               />
+
+              {!isEditMode && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">
+                      Relationships (optional)
+                    </Label>
+                    {!isAddingRelationship && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsAddingRelationship(true)}
+                        disabled={isSubmitting || isSubmittingAndStart}
+                        className="h-7"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Relationship
+                      </Button>
+                    )}
+                  </div>
+
+                  {relationshipsToCreate.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {relationshipsToCreate.map((rel, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start justify-between gap-2 p-2 rounded border bg-muted/30"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium">
+                              {rel.targetTask.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {rel.relationshipType}
+                            </div>
+                            {rel.note && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {rel.note}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => {
+                              setRelationshipsToCreate((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              );
+                            }}
+                            disabled={isSubmitting || isSubmittingAndStart}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {isAddingRelationship && (
+                    <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                      <div className="space-y-2">
+                        <Label htmlFor="relationship-type">
+                          Relationship Type
+                        </Label>
+                        <RelationshipTypeSelect
+                          value={currentRelationshipType}
+                          onValueChange={setCurrentRelationshipType}
+                          disabled={isSubmitting || isSubmittingAndStart}
+                        />
+                      </div>
+
+                      {currentRelationshipType && projectId && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="target-task">Target Task</Label>
+                            <TaskSearchAutocomplete
+                              value={currentRelationshipSearchValue}
+                              onChange={setCurrentRelationshipSearchValue}
+                              onSelect={(task) => {
+                                setCurrentRelationshipTask(task);
+                                setCurrentRelationshipSearchValue(''); // Clear search after selection
+                              }}
+                              projectId={projectId}
+                              disabled={isSubmitting || isSubmittingAndStart}
+                            />
+                            {currentRelationshipTask && (
+                              <div className="text-xs text-muted-foreground">
+                                Selected: {currentRelationshipTask.title}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="relationship-note">
+                              Note (optional)
+                            </Label>
+                            <Textarea
+                              id="relationship-note"
+                              value={currentRelationshipNote}
+                              onChange={(e) =>
+                                setCurrentRelationshipNote(e.target.value)
+                              }
+                              rows={2}
+                              placeholder="Add a note about this relationship..."
+                              disabled={isSubmitting || isSubmittingAndStart}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (
+                                  currentRelationshipType &&
+                                  currentRelationshipTask
+                                ) {
+                                  setRelationshipsToCreate((prev) => [
+                                    ...prev,
+                                    {
+                                      relationshipType: currentRelationshipType,
+                                      targetTask: currentRelationshipTask,
+                                      note: currentRelationshipNote,
+                                    },
+                                  ]);
+                                  setCurrentRelationshipType('');
+                                  setCurrentRelationshipTask(null);
+                                  setCurrentRelationshipNote('');
+                                  setCurrentRelationshipSearchValue('');
+                                  setIsAddingRelationship(false);
+                                }
+                              }}
+                              disabled={
+                                !currentRelationshipTask ||
+                                isSubmitting ||
+                                isSubmittingAndStart
+                              }
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setIsAddingRelationship(false);
+                                setCurrentRelationshipType('');
+                                setCurrentRelationshipTask(null);
+                                setCurrentRelationshipNote('');
+                                setCurrentRelationshipSearchValue('');
+                              }}
+                              disabled={isSubmitting || isSubmittingAndStart}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {isEditMode && (
                 <div className="pt-2">

@@ -40,6 +40,18 @@ const mockGroups = [
 
 test.describe('Task Templates Settings', () => {
   test.beforeEach(async ({ page }) => {
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        throw new Error(`Console error: ${msg.text()}`);
+      }
+    });
+    
+    // Listen for uncaught exceptions
+    page.on('pageerror', error => {
+      throw error;
+    });
+    
     // Mock API responses
     await page.route('**/api/task-templates', (route) => {
       if (route.request().method() === 'GET') {
@@ -138,14 +150,35 @@ test.describe('Task Templates Settings', () => {
   });
 
   test('should open create template dialog', async ({ page }) => {
-    await page.getByRole('button', { name: /add template/i }).click();
+    // Use title attribute to be more specific
+    await page.getByRole('button', { name: /add template/i }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: /create template/i })).toBeVisible();
+    
+    // Verify all form components are rendered correctly
+    await expect(page.getByLabel(/group/i)).toBeVisible();
+    await expect(page.getByLabel(/group/i)).toBeEnabled();
+    await expect(page.getByLabel(/template name/i)).toBeVisible();
+    await expect(page.getByLabel(/template title/i)).toBeVisible();
+    await expect(page.getByLabel(/ticket title/i)).toBeVisible();
+    await expect(page.getByLabel(/ticket description/i)).toBeVisible();
   });
 
   test('should create new template', async ({ page }) => {
-    await page.getByRole('button', { name: /add template/i }).click();
+    await page.getByRole('button', { name: /add template/i }).first().click();
     
+    // Wait for dialog and form to be ready
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByLabel(/group/i)).toBeVisible();
+    
+    // Interact with Group Select dropdown - verify it works
+    await page.getByLabel(/group/i).click();
+    await expect(page.getByRole('option', { name: /no group/i })).toBeVisible();
+    await expect(page.getByRole('option', { name: /bug reports/i })).toBeVisible();
+    // Select "No group" option
+    await page.getByRole('option', { name: /no group/i }).click();
+    
+    // Fill all form fields
     await page.getByLabel(/template name/i).fill('new_template');
     await page.getByLabel(/template title/i).fill('New Template');
     await page.getByLabel(/ticket title/i).fill('New Ticket');
@@ -160,8 +193,34 @@ test.describe('Task Templates Settings', () => {
     await expect(page.getByText('New Template')).toBeVisible();
   });
 
+  test('should create template with group selected', async ({ page }) => {
+    await page.getByRole('button', { name: /add template/i }).first().click();
+    
+    // Wait for dialog and form to be ready
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByLabel(/group/i)).toBeVisible();
+    
+    // Select a group from the dropdown
+    await page.getByLabel(/group/i).click();
+    await page.getByRole('option', { name: /bug reports/i }).click();
+    
+    // Fill all form fields
+    await page.getByLabel(/template name/i).fill('template_with_group');
+    await page.getByLabel(/template title/i).fill('Template With Group');
+    await page.getByLabel(/ticket title/i).fill('Ticket With Group');
+    await page.getByLabel(/ticket description/i).fill('Description');
+    
+    await page.getByRole('button', { name: /create/i }).click();
+    
+    // Wait for dialog to close
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    
+    // Verify template appears in list
+    await expect(page.getByText('Template With Group')).toBeVisible();
+  });
+
   test('should validate required fields', async ({ page }) => {
-    await page.getByRole('button', { name: /add template/i }).click();
+    await page.getByRole('button', { name: /add template/i }).first().click();
     
     // Try to create without filling fields
     const createButton = page.getByRole('button', { name: /create/i });
@@ -182,13 +241,29 @@ test.describe('Task Templates Settings', () => {
   });
 
   test('should open create group dialog', async ({ page }) => {
-    await page.getByRole('button', { name: /add group/i }).click();
+    await page.getByRole('button', { name: /add group/i }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: /create group/i })).toBeVisible();
+    
+    // Verify all form components are rendered correctly
+    await expect(page.getByLabel(/group name/i)).toBeVisible();
+    await expect(page.getByLabel(/parent group/i)).toBeVisible();
+    await expect(page.getByLabel(/parent group/i)).toBeEnabled();
   });
 
   test('should create new group', async ({ page }) => {
-    await page.getByRole('button', { name: /add group/i }).click();
+    await page.getByRole('button', { name: /add group/i }).first().click();
+    
+    // Wait for dialog and form to be ready
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByLabel(/parent group/i)).toBeVisible();
+    
+    // Interact with Parent Group Select dropdown - verify it works
+    await page.getByLabel(/parent group/i).click();
+    await expect(page.getByRole('option', { name: /no parent/i })).toBeVisible();
+    await expect(page.getByRole('option', { name: /bug reports/i })).toBeVisible();
+    // Select "No parent" option
+    await page.getByRole('option', { name: /no parent/i }).click();
     
     await page.getByLabel(/group name/i).fill('New Group');
     
@@ -199,6 +274,28 @@ test.describe('Task Templates Settings', () => {
     
     // Verify group appears in list
     await expect(page.getByText('New Group')).toBeVisible();
+  });
+
+  test('should create group with parent selected', async ({ page }) => {
+    await page.getByRole('button', { name: /add group/i }).first().click();
+    
+    // Wait for dialog and form to be ready
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByLabel(/parent group/i)).toBeVisible();
+    
+    // Select a parent group from the dropdown
+    await page.getByLabel(/parent group/i).click();
+    await page.getByRole('option', { name: /bug reports/i }).click();
+    
+    await page.getByLabel(/group name/i).fill('Child Group');
+    
+    await page.getByRole('button', { name: /create/i }).click();
+    
+    // Wait for dialog to close
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    
+    // Verify group appears in list
+    await expect(page.getByText('Child Group')).toBeVisible();
   });
 
   test('should filter templates by group', async ({ page }) => {
@@ -220,6 +317,7 @@ test.describe('Task Templates Settings', () => {
             data: {
               ...mockTemplates[0],
               template_title: request.template_title || mockTemplates[0].template_title,
+              group_id: request.group_id !== undefined ? request.group_id : mockTemplates[0].group_id,
             },
             error_data: null,
             message: null,
@@ -245,6 +343,15 @@ test.describe('Task Templates Settings', () => {
     
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: /edit template/i })).toBeVisible();
+    
+    // Verify all form components are rendered correctly
+    await expect(page.getByLabel(/group/i)).toBeVisible();
+    await expect(page.getByLabel(/group/i)).toBeEnabled();
+    
+    // Interact with Group Select dropdown
+    await page.getByLabel(/group/i).click();
+    await expect(page.getByRole('option', { name: /no group/i })).toBeVisible();
+    await page.getByRole('option', { name: /bug reports/i }).click();
     
     // Update template title
     await page.getByLabel(/template title/i).clear();

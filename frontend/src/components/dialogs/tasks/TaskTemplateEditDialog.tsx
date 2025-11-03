@@ -58,7 +58,8 @@ export const TaskTemplateEditDialog = NiceModal.create<TaskTemplateEditDialogPro
         const flattenGroups = (groups: any[]): TaskTemplateGroup[] => {
           const result: TaskTemplateGroup[] = [];
           const traverse = (group: any, depth = 0) => {
-            result.push({ ...group.group, children: [] });
+            const { children, ...groupData } = group;
+            result.push(groupData);
             group.children.forEach((child: any) => traverse(child, depth + 1));
           };
           groups.forEach(g => traverse(g));
@@ -191,9 +192,9 @@ export const TaskTemplateEditDialog = NiceModal.create<TaskTemplateEditDialogPro
               })}
             </Label>
             <Select
-              value={formData.group_id || ''}
+              value={formData.group_id || '__none__'}
               onValueChange={(value) => {
-                setFormData({ ...formData, group_id: value || null });
+                setFormData({ ...formData, group_id: value === '__none__' ? null : value });
               }}
               disabled={saving || loadingGroups}
             >
@@ -203,7 +204,7 @@ export const TaskTemplateEditDialog = NiceModal.create<TaskTemplateEditDialogPro
                 })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('settings.taskTemplates.dialog.group.none', {
+                <SelectItem value="__none__">{t('settings.taskTemplates.dialog.group.none', {
                   defaultValue: 'No group',
                 })}</SelectItem>
                 {groups.map((group) => (

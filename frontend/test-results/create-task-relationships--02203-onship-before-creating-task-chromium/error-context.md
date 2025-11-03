@@ -1,0 +1,85 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e8]: Development Mode - This is a development build
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - link [ref=e13] [cursor=pointer]:
+          - /url: /projects
+          - img [ref=e14]
+        - link "Join our Discord" [ref=e16] [cursor=pointer]:
+          - /url: https://discord.gg/AC4nwVtJM3
+          - img [ref=e18]
+          - generic [ref=e20]: 35 online
+      - generic [ref=e21]:
+        - img [ref=e22]
+        - textbox "Search..." [ref=e25]
+      - generic [ref=e26]:
+        - button "Open in VS Code" [ref=e27] [cursor=pointer]:
+          - img "VS Code" [ref=e28]
+          - generic [ref=e29]: Open in VS Code
+        - button "Create new task" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+        - link "Settings" [ref=e32] [cursor=pointer]:
+          - /url: /settings/projects?projectId=03a0c5a9-380b-4fa1-91e1-db8987b98fdf
+          - img [ref=e33]
+        - button "Main navigation" [ref=e36] [cursor=pointer]:
+          - img [ref=e37]
+    - alert [ref=e40]:
+      - heading "Error" [level=5] [ref=e41]:
+        - img [ref=e42]
+        - text: Error
+      - generic [ref=e44]: Not Found
+  - generic [ref=e47]:
+    - button "Close" [ref=e48] [cursor=pointer]:
+      - img [ref=e49]
+      - generic [ref=e52]: Close
+    - generic [ref=e53]:
+      - heading "Create New Task" [level=3] [ref=e55]
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - text: Title
+          - textbox "Title" [ref=e58]:
+            - /placeholder: What needs to be done?
+            - text: Test Task
+        - generic [ref=e59]:
+          - text: Description
+          - textbox "Add more details (optional). Type @ to insert tags or search files." [ref=e61]
+        - button "Images" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - img [ref=e66]
+          - generic [ref=e70]: Images
+        - generic [ref=e71]:
+          - generic [ref=e73]: Relationships (optional)
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - text: Relationship Type
+              - combobox [ref=e76] [cursor=pointer]:
+                - generic: Blocks
+                - img [ref=e77]
+            - generic [ref=e79]:
+              - text: Target Task
+              - generic [ref=e81]:
+                - img [ref=e82]
+                - textbox "Search tasks by ID or title..." [active] [ref=e85]: Test Target
+            - generic [ref=e86]:
+              - text: Note (optional)
+              - textbox "Note (optional)" [ref=e87]:
+                - /placeholder: Add a note about this relationship...
+            - generic [ref=e88]:
+              - button "Add" [disabled]
+              - button "Cancel" [ref=e89] [cursor=pointer]
+        - group [ref=e91]:
+          - generic "Quickstart" [ref=e92] [cursor=pointer]:
+            - img [ref=e93]
+            - img [ref=e95]
+            - text: Quickstart
+        - generic [ref=e98]:
+          - button "Cancel" [ref=e99] [cursor=pointer]
+          - button "Create Task" [ref=e100] [cursor=pointer]
+          - button "Create & Start" [ref=e101] [cursor=pointer]
+```

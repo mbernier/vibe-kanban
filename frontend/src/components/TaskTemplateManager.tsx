@@ -179,7 +179,7 @@ export function TaskTemplateManager() {
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={() => handleOpenGroupDialog(group.group)}
+              onClick={() => handleOpenGroupDialog(group)}
               title={t('settings.taskTemplates.manager.editGroup', {
                 defaultValue: 'Edit group',
               })}
@@ -190,7 +190,7 @@ export function TaskTemplateManager() {
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={() => handleDeleteGroup(group.group)}
+              onClick={() => handleDeleteGroup(group)}
               title={t('settings.taskTemplates.manager.deleteGroup', {
                 defaultValue: 'Delete group',
               })}
@@ -264,7 +264,6 @@ export function TaskTemplateManager() {
     );
   }
 
-  const topLevelTemplates = templates.filter((t) => !t.group_id);
   const hasNoGroups = groups.length === 0;
   const hasNoTemplates = templates.length === 0;
 

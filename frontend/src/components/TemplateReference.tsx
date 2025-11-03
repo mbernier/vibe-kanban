@@ -10,7 +10,6 @@ import {
 import { showTaskTemplateEdit } from '@/lib/modals';
 import { taskTemplatesApi } from '@/lib/api';
 import { useState } from 'react';
-import type { TaskTemplate } from 'shared/types';
 
 interface TemplateReferenceMetadata {
   type: string;

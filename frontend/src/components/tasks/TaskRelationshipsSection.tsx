@@ -63,7 +63,6 @@ export function TaskRelationshipsSection({
 }: TaskRelationshipsSectionProps) {
   const { t } = useTranslation('tasks');
   const [relationships, setRelationships] = useState<RelationshipsByType>({});
-  const [types, setTypes] = useState<RelationshipType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -80,7 +79,8 @@ export function TaskRelationshipsSection({
     try {
       // Fetch relationship types
       const relationshipTypes = await taskRelationshipTypesApi.list();
-      setTypes(relationshipTypes as RelationshipType[]);
+      // Store types for reference (currently unused but kept for future use)
+      void relationshipTypes;
 
       // Fetch relationships for this task
       // API returns array of TaskRelationshipGrouped objects
@@ -177,8 +177,7 @@ export function TaskRelationshipsSection({
   };
 
   const handleDeleteRelationship = async (
-    relationshipId: string,
-    typeName: string
+    relationshipId: string
   ) => {
     if (!task?.id) return;
 
@@ -258,7 +257,7 @@ export function TaskRelationshipsSection({
           className="h-6 w-6 shrink-0"
           onClick={(e) => {
             e.stopPropagation();
-            handleDeleteRelationship(rel.id, rel.relationship_type_name);
+            handleDeleteRelationship(rel.id);
           }}
         >
           <Trash2 className="h-3 w-3" />
